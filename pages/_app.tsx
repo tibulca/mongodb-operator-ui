@@ -23,7 +23,7 @@ function MyApp() {
         width: "100%",
         alignItems: "right",
         justifyContent: "right",
-        bgcolor: "background.default",
+        bgcolor: theme.palette.mode === "dark" ? "#016948" : "#51ac4e", //"background.default",
         color: "text.primary",
         borderRadius: 1,
         p: 3,

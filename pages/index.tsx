@@ -1,9 +1,9 @@
 import type { NextPage } from "next";
 import { useEffect, useState } from "react";
-import styles from "../styles/Home.module.css";
-import Deployment from "./components/deployment";
-import apiClient from "../services/ui/clients/api";
-import { MongodbDeployment } from "../core/models";
+import styles from "../src/ui/styles/Home.module.css";
+import Deployment from "../src/ui/components/deployment";
+import apiClient from "../src/ui/services/clients/api";
+import { MongodbDeployment } from "../src/core/models";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 //import Container from "@mui/material/Container";

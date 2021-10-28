@@ -31,7 +31,6 @@ const options = {
     shape: "box",
     font: {
       multi: true,
-      bold: true,
     },
   },
   groups: {
@@ -73,7 +72,7 @@ export type NetworkProps = {
   onSelectNode: (uid: string | undefined) => void;
 };
 
-export const Network = (props: NetworkProps) => {
+const Network = (props: NetworkProps) => {
   const [network, setNetwork] = useState(null);
 
   return (
@@ -90,3 +89,5 @@ export const Network = (props: NetworkProps) => {
     />
   );
 };
+
+export default Network;

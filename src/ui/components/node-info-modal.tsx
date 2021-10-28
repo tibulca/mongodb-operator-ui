@@ -1,10 +1,12 @@
 import { useState } from "react";
 
-import { Modal, Typography, Box } from "@mui/material";
+import { Modal, Typography, Box, Button, Stack, TextField } from "@mui/material";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
+import apiClient from "../services/clients/api";
 
 const style = {
   position: "absolute" as "absolute",
@@ -19,6 +21,12 @@ const style = {
 };
 
 type NodeInfoModalProps = {
+  // todo: node details should not be in this type. Instead, this component should only dispatch the actions (configurable in props)
+  node: {
+    name: string;
+    namespace: string;
+    kind: string;
+  };
   show: boolean;
   title: string;
   sections: {
@@ -28,7 +36,18 @@ type NodeInfoModalProps = {
   onClose: () => void;
 };
 
-export const NodeInfoModal = (props: NodeInfoModalProps) => {
+const downloadPodLogs = async (namespace: string, pod: string, container?: string) => {
+  const logs = await apiClient.getPodLogs(namespace, pod, container ?? "");
+
+  const element = document.createElement("a");
+  const file = new Blob([logs], { type: "text/plain" });
+  element.href = URL.createObjectURL(file);
+  element.download = `logs-${namespace}-${pod}-${Date.now()}.txt`;
+  document.body.appendChild(element);
+  element.click();
+};
+
+const NodeInfoModal = (props: NodeInfoModalProps) => {
   const [expanded, setExpanded] = useState<string | false>("panel0");
 
   const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
@@ -45,7 +64,18 @@ export const NodeInfoModal = (props: NodeInfoModalProps) => {
     >
       <Box sx={style}>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-          <h2>{props.title}</h2>
+          <Stack direction="row" spacing={2}>
+            <h2>{props.title}</h2>
+            {props.node.kind === "Pod" && (
+              <Button
+                size="small"
+                // variant="contained"
+                onClick={() => downloadPodLogs(props.node.namespace, props.node.name)}
+              >
+                Logs
+              </Button>
+            )}
+          </Stack>
         </Typography>
         {props.sections.map((s, idx) => (
           <Accordion key={idx} expanded={expanded === `panel${idx}`} onChange={handleChange(`panel${idx}`)}>
@@ -58,7 +88,8 @@ export const NodeInfoModal = (props: NodeInfoModalProps) => {
             </AccordionSummary>
             <AccordionDetails>
               <Typography>
-                <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre>
+                <TextField multiline maxRows={20} fullWidth disabled value={s.content} />
+                {/* <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre> */}
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -67,3 +98,5 @@ export const NodeInfoModal = (props: NodeInfoModalProps) => {
     </Modal>
   );
 };
+
+export default NodeInfoModal;

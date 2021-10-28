@@ -8,8 +8,8 @@ import { useTheme, ThemeProvider, createTheme } from "@mui/material/styles";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 
-import "../styles/globals.css";
-import theme from "../src/theme";
+import "../src/ui/styles/globals.css";
+import theme from "../src/ui/theme";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 

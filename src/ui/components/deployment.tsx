@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import YAML from "yaml";
 
 import { MongodbDeployment } from "../../core/models";
-import { NodeInfoModal } from "./node-info-modal";
-import { Network } from "./network";
+import NodeInfoModal from "./node-info-modal";
+import Network from "./network";
 import * as NetworkModels from "../models/network";
 
 type DeploymentProps = {
@@ -106,6 +106,7 @@ const getNodeDetails = (data: MongodbDeployment, uid?: string) => {
   return {
     title: `${selectedNode.name}`,
     sections,
+    node: selectedNode,
   };
 };
 
@@ -119,6 +120,11 @@ const Deployment = (props: DeploymentProps) => {
       <NodeInfoModal
         show={!!selectedNodeUID}
         title={nodeDetails.title}
+        node={{
+          kind: nodeDetails.node?.kind ?? "",
+          namespace: nodeDetails.node?.namespace ?? "",
+          name: nodeDetails.node?.name ?? "",
+        }}
         sections={nodeDetails.sections}
         onClose={() => setSelectedNodeUID(undefined)}
       />

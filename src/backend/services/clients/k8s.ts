@@ -12,6 +12,9 @@ const getPods = async (namespace: string) =>
     .listNamespacedPod(namespace)
     .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? "Pod" })) }));
 
+const readPodLogs = async (namespace: string, podName: string) =>
+  k8sApi.readNamespacedPodLog(podName, namespace).then((res) => res.body);
+
 // todo: set "kind" if not found in the response
 const getDeployments = async (namespace: string) =>
   k8sAppsApi
@@ -43,4 +46,5 @@ export default {
   getStatefulSets,
   getCRDs,
   getCRs,
+  readPodLogs,
 };

@@ -12,6 +12,9 @@ const getPods = async (namespace: string) =>
     .listNamespacedPod(namespace)
     .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? "Pod" })) }));
 
+const deletePod = async (namespace: string, podName: string) =>
+  k8sApi.deleteNamespacedPod(podName, namespace).then((res) => res.body);
+
 const readPodLogs = async (namespace: string, podName: string) =>
   k8sApi.readNamespacedPodLog(podName, namespace).then((res) => res.body);
 
@@ -31,8 +34,10 @@ const getStatefulSets = async (namespace: string) =>
     .listNamespacedStatefulSet(namespace)
     .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? "StatefulSet" })) }));
 
-const getCRDs = async (group: string) =>
-  k8sApiExt.listCustomResourceDefinition().then((res) => res.body.items.filter((crd) => crd.spec.group === group));
+const getCRDs = async (groups: string[]) =>
+  k8sApiExt
+    .listCustomResourceDefinition()
+    .then((res) => res.body.items.filter((crd) => groups.includes(crd.spec.group)));
 
 const getCRs = async (group: string, version: string, namespace: string, plural: string): Promise<any[]> =>
   k8sCustomObjectsApi
@@ -46,5 +51,6 @@ export default {
   getStatefulSets,
   getCRDs,
   getCRs,
+  deletePod,
   readPodLogs,
 };

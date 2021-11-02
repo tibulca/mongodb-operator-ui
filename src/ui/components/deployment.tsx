@@ -17,6 +17,7 @@ const ResourceImageMap: Record<string, string> = {
   statefulset: "/images/sts-256.png",
   replicaset: "/images/rs-256.png",
   mongodb: "/images/crd-u-256.png",
+  mongodbcommunity: "/images/crd-u-256.png",
 };
 
 const networkDataContainer = () => {

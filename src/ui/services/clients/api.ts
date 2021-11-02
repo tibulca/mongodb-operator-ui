@@ -15,6 +15,11 @@ const getAsyncText = async (url: string): Promise<string> => {
   return result.text();
 };
 
+const deleteAsync = async (url: string): Promise<string> => {
+  const result = await fetch(url, { method: "DELETE" });
+  return result.text();
+};
+
 const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) => {
   const fetchData = async () => {
     try {
@@ -32,6 +37,8 @@ const getMongodbDeployment = (successCb: successCallback<MongodbDeployment>, err
   get("/api/deployment", (result: MongodbDeployment) => successCb(result), errCb);
 
 const getPodLogs = (namespace: string, pod: string, container: string) =>
-  getAsyncText(`/api/logs?namespace=${namespace}&pod=${pod}&container=${container}`);
+  getAsyncText(`/api/pods/logs?namespace=${namespace}&pod=${pod}&container=${container}`);
 
-export default { get, getAsyncJSON, getAsyncText, getMongodbDeployment, getPodLogs };
+const deletePod = (namespace: string, pod: string) => deleteAsync(`/api/pods?namespace=${namespace}&pod=${pod}`);
+
+export default { get, getAsyncJSON, getAsyncText, getMongodbDeployment, getPodLogs, deletePod };

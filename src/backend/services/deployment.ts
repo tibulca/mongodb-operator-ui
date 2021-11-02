@@ -1,18 +1,18 @@
 import { MongodbDeployment, K8SObject } from "../../core/models";
 import k8sClient from "./clients/k8s";
 
-const CRDGroup = "mongodb.com";
+const CRDGroups = ["mongodb.com", "mongodbcommunity.mongodb.com"];
 
 export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
   let operatorNs = "mongodb";
 
-  const kCRDs = await k8sClient.getCRDs(CRDGroup);
+  const kCRDs = await k8sClient.getCRDs(CRDGroups);
   const k8sObjects: K8SObject[] = [];
   const allCRs: K8SObject[] = [];
 
   for (const crd of kCRDs) {
     const kCRs = await k8sClient.getCRs(crd.spec.group, crd.spec.versions[0].name, "", crd.spec.names.plural);
-    const mdbCR = kCRs.find((c) => c.kind === "MongoDB" || c.kind === "MongoDBMulti");
+    const mdbCR = kCRs.find((c) => c.kind === "MongoDB" || c.kind === "MongoDBMulti" || c.kind === "MongoDBCommunity");
     operatorNs = mdbCR?.metadata.namespace ?? operatorNs;
 
     k8sObjects.push({

@@ -5,6 +5,8 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert, { AlertProps } from "@mui/material/Alert";
 
 import apiClient from "../services/clients/api";
 
@@ -47,8 +49,11 @@ const downloadPodLogs = async (namespace: string, pod: string, container?: strin
   element.click();
 };
 
+const deletePod = async (namespace: string, pod: string, container?: string) => apiClient.deletePod(namespace, pod);
+
 const NodeInfoModal = (props: NodeInfoModalProps) => {
   const [expanded, setExpanded] = useState<string | false>("panel0");
+  const [notification, setNotification] = useState("");
 
   const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
     setExpanded(newExpanded ? panel : false);
@@ -67,13 +72,19 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
           <Stack direction="row" spacing={2}>
             <h2>{props.title}</h2>
             {props.node.kind === "Pod" && (
-              <Button
-                size="small"
-                // variant="contained"
-                onClick={() => downloadPodLogs(props.node.namespace, props.node.name)}
-              >
-                Logs
-              </Button>
+              <>
+                <Button size="small" onClick={() => downloadPodLogs(props.node.namespace, props.node.name)}>
+                  Logs
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    deletePod(props.node.namespace, props.node.name).then(() => setNotification("Pod deleted"))
+                  }
+                >
+                  Delete
+                </Button>
+              </>
             )}
           </Stack>
         </Typography>
@@ -94,6 +105,17 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
             </AccordionDetails>
           </Accordion>
         ))}
+        <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
+          <MuiAlert
+            elevation={6}
+            variant="filled"
+            onClose={() => setNotification("")}
+            severity="success"
+            sx={{ width: "100%" }}
+          >
+            {notification}
+          </MuiAlert>
+        </Snackbar>
       </Box>
     </Modal>
   );

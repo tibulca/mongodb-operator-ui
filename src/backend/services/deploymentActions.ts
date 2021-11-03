@@ -7,7 +7,7 @@ const getActions = (o: K8SObject): NodeHttpAction[] => {
 
   switch (o.kind) {
     case K8SKind.Pod:
-      return [
+      const podActions = [
         ...(o.childs ?? []).map((container) => ({
           group: "logs",
           label: labelIsSameAsGroup ? container : "logs",
@@ -15,14 +15,25 @@ const getActions = (o: K8SObject): NodeHttpAction[] => {
           url: `/api/pods/logs?namespace=${o.namespace}&pod=${o.name}&container=${container}`,
           httpMethod: HttpMethod.Get,
         })),
-        {
-          group: "delete",
-          label: "delete",
-          description: `delete pod ${o.namespace}/${o.name}`,
-          url: `/api/pods?namespace=${o.namespace}&pod=${o.name}`,
-          httpMethod: HttpMethod.Delete,
-        },
       ];
+      const mdbContainer = o.childs && o.childs.find((c) => c === "mongod" || c === "mongodb-enterprise-database");
+      if (mdbContainer) {
+        podActions.push({
+          group: "health",
+          label: "agent health status",
+          description: `agent health status ${o.namespace}/${o.name}:${mdbContainer}`,
+          url: `/api/pods/agenthealth?namespace=${o.namespace}&pod=${o.name}&container=${mdbContainer}`,
+          httpMethod: HttpMethod.Get,
+        });
+      }
+      podActions.push({
+        group: "delete",
+        label: "delete",
+        description: `delete pod ${o.namespace}/${o.name}`,
+        url: `/api/pods?namespace=${o.namespace}&pod=${o.name}`,
+        httpMethod: HttpMethod.Delete,
+      });
+      return podActions;
     default:
       return [];
   }

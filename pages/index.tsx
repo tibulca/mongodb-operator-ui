@@ -3,13 +3,13 @@ import { useEffect, useState } from "react";
 import styles from "../src/ui/styles/Home.module.css";
 import Deployment from "../src/ui/components/deployment";
 import apiClient from "../src/ui/services/clients/api";
-import { MongodbDeployment } from "../src/core/models";
+import { MongodbDeploymentUIModel } from "../src/core/models";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 //import Container from "@mui/material/Container";
 
 const Home: NextPage = () => {
-  const [deployment, setDeployment] = useState<MongodbDeployment | undefined>();
+  const [deployment, setDeployment] = useState<MongodbDeploymentUIModel | undefined>();
 
   useEffect(
     () =>

@@ -27,13 +27,16 @@ export type MongodbDeployment = {
   k8sObjects: K8SObject[];
 };
 
+export type NodeHttpAction = {
+  group: string;
+  label: string;
+  description: string;
+  url: string;
+  httpMethod: HttpMethod;
+};
+
 export type K8SObjectWithActions = K8SObject & {
-  actions?: {
-    group: string;
-    label: string;
-    url: string;
-    httpMethod: HttpMethod;
-  }[];
+  actions?: NodeHttpAction[];
 };
 
 export type MongodbDeploymentWithActions = {

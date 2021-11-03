@@ -16,8 +16,8 @@ const getPods = async (namespace: string) =>
 const deletePod = async (namespace: string, podName: string) =>
   k8sApi.deleteNamespacedPod(podName, namespace).then((res) => res.body);
 
-const readPodLogs = async (namespace: string, podName: string) =>
-  k8sApi.readNamespacedPodLog(podName, namespace).then((res) => res.body);
+const readPodLogs = async (namespace: string, podName: string, container: string) =>
+  k8sApi.readNamespacedPodLog(podName, namespace, container).then((res) => res.body);
 
 // todo: set "kind" if not found in the response
 const getDeployments = async (namespace: string) =>

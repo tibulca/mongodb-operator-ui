@@ -6,9 +6,12 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Snackbar from "@mui/material/Snackbar";
-import MuiAlert, { AlertProps } from "@mui/material/Alert";
+import MuiAlert from "@mui/material/Alert";
 
 import apiClient from "../services/clients/api";
+import { HttpContentType } from "../../core/enums";
+import { NodeHttpAction } from "../../core/models";
+import PositionedMenu from "./positioned-menu";
 
 const style = {
   position: "absolute" as "absolute",
@@ -22,6 +25,11 @@ const style = {
   p: 4,
 };
 
+type InfoSection = {
+  title: string;
+  content: string;
+};
+
 type NodeInfoModalProps = {
   // todo: node details should not be in this type. Instead, this component should only dispatch the actions (configurable in props)
   node: {
@@ -31,33 +39,99 @@ type NodeInfoModalProps = {
   };
   show: boolean;
   title: string;
-  sections: {
-    title: string;
-    content: string;
-  }[];
+  sections: InfoSection[];
+  actions: NodeHttpAction[];
   onClose: () => void;
 };
 
-const downloadPodLogs = async (namespace: string, pod: string, container?: string) => {
-  const logs = await apiClient.getPodLogs(namespace, pod, container ?? "");
-
+const downloadTextFile = (filename: string, text: string) => {
+  const file = new Blob([text], { type: HttpContentType.TextFile });
   const element = document.createElement("a");
-  const file = new Blob([logs], { type: "text/plain" });
   element.href = URL.createObjectURL(file);
-  element.download = `logs-${namespace}-${pod}-${Date.now()}.txt`;
+  element.download = filename;
   document.body.appendChild(element);
   element.click();
 };
 
-const deletePod = async (namespace: string, pod: string, container?: string) => apiClient.deletePod(namespace, pod);
+const executeAction = async (action: NodeHttpAction) => {
+  console.log("action", action);
+  const response = await apiClient.executeHttpAction(action);
+  if (response.contentType === HttpContentType.TextFile) {
+    downloadTextFile(`${action.group}-${action.label}-${Date.now()}.txt`, String(response.body));
+  }
+
+  return response.success;
+};
+
+const renderActions = (actions: NodeHttpAction[], callback: (response: { text: string; isError: boolean }) => void) => {
+  if (!actions || !actions.length) {
+    return null;
+  }
+
+  const groupedActions = actions.reduce((acc, action) => {
+    if (!acc.has(action.group)) {
+      acc.set(action.group, []);
+    }
+    acc.get(action.group)?.push(action);
+    return acc;
+  }, new Map<string, NodeHttpAction[]>());
+
+  const executeActionAndProcessResponse = (action: NodeHttpAction) =>
+    executeAction(action).then((success) =>
+      callback({
+        text: `"${action.description}" ${success ? "was successful" : "failed"}`,
+        isError: !success,
+      })
+    );
+
+  return Array.from(groupedActions.entries()).map(([group, groupActions]) =>
+    groupActions.length === 1 ? (
+      <Button key={groupActions[0].url} size="small" onClick={() => executeActionAndProcessResponse(groupActions[0])}>
+        {groupActions[0].label}
+      </Button>
+    ) : (
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <PositionedMenu
+          title={group}
+          options={groupActions.map((a) => a.label)}
+          onOptionSelect={(idx: number) => executeActionAndProcessResponse(groupActions[idx])}
+        />
+      </div>
+    )
+  );
+};
+
+const renderInfoSections = (
+  sections: InfoSection[],
+  expandedPanel: string | boolean,
+  setExpandedPanel: (panel: string | false) => void
+) => {
+  const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
+    setExpandedPanel(newExpanded ? panel : false);
+  };
+
+  return sections.map((s, idx) => (
+    <Accordion key={idx} expanded={expandedPanel === `panel${idx}`} onChange={handleChange(`panel${idx}`)}>
+      <AccordionSummary
+        expandIcon={<ExpandMoreIcon />}
+        aria-controls={`panel${idx}a-content`}
+        id={`panel${idx}a-header`}
+      >
+        <Typography>{s.title}:</Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        <Typography>
+          <TextField multiline maxRows={20} fullWidth disabled value={s.content} />
+          {/* <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre> */}
+        </Typography>
+      </AccordionDetails>
+    </Accordion>
+  ));
+};
 
 const NodeInfoModal = (props: NodeInfoModalProps) => {
   const [expanded, setExpanded] = useState<string | false>("panel0");
-  const [notification, setNotification] = useState("");
-
-  const handleChange = (panel: string) => (event: React.SyntheticEvent, newExpanded: boolean) => {
-    setExpanded(newExpanded ? panel : false);
-  };
+  const [notification, setNotification] = useState<{ text: string; isError: boolean }>({ text: "", isError: false });
 
   return (
     <Modal
@@ -71,49 +145,23 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
           <Stack direction="row" spacing={2}>
             <h2>{props.title}</h2>
-            {props.node.kind === "Pod" && (
-              <>
-                <Button size="small" onClick={() => downloadPodLogs(props.node.namespace, props.node.name)}>
-                  Logs
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() =>
-                    deletePod(props.node.namespace, props.node.name).then(() => setNotification("Pod deleted"))
-                  }
-                >
-                  Delete
-                </Button>
-              </>
-            )}
+            {renderActions(props.actions, (response: { text: string; isError: boolean }) => setNotification(response))}
           </Stack>
         </Typography>
-        {props.sections.map((s, idx) => (
-          <Accordion key={idx} expanded={expanded === `panel${idx}`} onChange={handleChange(`panel${idx}`)}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              aria-controls={`panel${idx}a-content`}
-              id={`panel${idx}a-header`}
-            >
-              <Typography>{s.title}:</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography>
-                <TextField multiline maxRows={20} fullWidth disabled value={s.content} />
-                {/* <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre> */}
-              </Typography>
-            </AccordionDetails>
-          </Accordion>
-        ))}
-        <Snackbar open={!!notification} autoHideDuration={3000} onClose={() => setNotification("")}>
+        {renderInfoSections(props.sections, expanded, (panel: string | false) => setExpanded(panel))}
+        <Snackbar
+          open={!!notification.text}
+          autoHideDuration={3000}
+          onClose={() => setNotification({ text: "", isError: false })}
+        >
           <MuiAlert
             elevation={6}
             variant="filled"
-            onClose={() => setNotification("")}
-            severity="success"
+            onClose={() => setNotification({ text: "", isError: false })}
+            severity={notification.isError ? "error" : "success"}
             sx={{ width: "100%" }}
           >
-            {notification}
+            {notification.text}
           </MuiAlert>
         </Snackbar>
       </Box>

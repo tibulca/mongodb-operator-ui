@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import YAML from "yaml";
 
-import { MongodbDeployment } from "../../core/models";
+import { MongodbDeployment, MongodbDeploymentUIModel } from "../../core/models";
 import NodeInfoModal from "./node-info-modal";
 import Network from "./network";
 import * as NetworkModels from "../models/network";
 
 type DeploymentProps = {
-  data: MongodbDeployment;
+  data: MongodbDeploymentUIModel;
 };
 
 const ResourceImageMap: Record<string, string> = {
@@ -75,7 +75,7 @@ const buildGraph = (deployment: MongodbDeployment) => {
   return graph.data();
 };
 
-const getNodeDetails = (data: MongodbDeployment, uid?: string) => {
+const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
   const selectedNode = data.k8sObjects.find((o) => o.uid === uid);
   if (!uid || !selectedNode) {
     return { title: "", sections: [] };
@@ -127,6 +127,7 @@ const Deployment = (props: DeploymentProps) => {
           name: nodeDetails.node?.name ?? "",
         }}
         sections={nodeDetails.sections}
+        actions={nodeDetails.node?.actions ?? []}
         onClose={() => setSelectedNodeUID(undefined)}
       />
 

@@ -5,6 +5,20 @@ export enum HttpMethod {
   Delete = "DELETE",
 }
 
+export enum HttpContentType {
+  JSON = "application/json",
+  TextFile = "text/plain",
+}
+
+export enum HttpHeader {
+  ContentType = "Content-Type",
+}
+
+export enum HttpStatusCode {
+  OK = 200,
+  BadRequest = 400,
+}
+
 export enum K8SKind {
   Pod = "Pod",
   Deployment = "Deployment",

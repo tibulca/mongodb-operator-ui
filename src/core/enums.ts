@@ -11,7 +11,7 @@ export enum HttpContentType {
 }
 
 export enum HttpHeader {
-  ContentType = "Content-Type",
+  ContentType = "content-type",
 }
 
 export enum HttpStatusCode {

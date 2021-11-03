@@ -1,19 +1,15 @@
-// todo: use axios
+import axios from "axios";
 
 import { HttpContentType, HttpHeader, HttpMethod, HttpStatusCode } from "../../../core/enums";
 import { MongodbDeploymentUIModel, NodeHttpAction } from "../../../core/models";
+import { Time } from "../../../core/utils";
 
 type errCallback = (err: Error) => void;
 type successCallback<T> = (result: T) => void;
 
-const getAsyncJSON = async <T>(url: string): Promise<T> => {
-  const result = await fetch(url);
-  return result.json();
-};
-
-const getAsyncText = async (url: string): Promise<string> => {
-  const result = await fetch(url);
-  return result.text();
+const getAsync = async <T>(url: string): Promise<T> => {
+  const result = await axios.get<T>(url, { timeout: Time.Seconds(5) });
+  return result.data;
 };
 
 const deleteAsync = async (url: string): Promise<string> => {
@@ -24,7 +20,7 @@ const deleteAsync = async (url: string): Promise<string> => {
 const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) => {
   const fetchData = async () => {
     try {
-      const result = await getAsyncJSON<T>(url);
+      const result = await getAsync<T>(url);
       successCb(result);
     } catch (err) {
       errCb(<Error>err);
@@ -38,25 +34,28 @@ const getMongodbDeployment = (successCb: successCallback<MongodbDeploymentUIMode
   get("/api/deployment", (result: MongodbDeploymentUIModel) => successCb(result), errCb);
 
 const getPodLogs = (namespace: string, pod: string, container: string) =>
-  getAsyncText(`/api/pods/logs?namespace=${namespace}&pod=${pod}&container=${container}`);
+  getAsync<string>(`/api/pods/logs?namespace=${namespace}&pod=${pod}&container=${container}`);
 
 const deletePod = (namespace: string, pod: string) => deleteAsync(`/api/pods?namespace=${namespace}&pod=${pod}`);
 
 const executeHttpAction = async (action: NodeHttpAction) => {
-  const httpResponse = await fetch(action.url, { method: action.httpMethod });
-  const contentType = httpResponse.headers.get(HttpHeader.ContentType);
+  const httpResponse = await axios({
+    method: action.httpMethod,
+    url: action.url,
+    timeout: Time.Seconds(5),
+  });
+
   return {
-    contentType: <HttpContentType>contentType,
+    contentType: <HttpContentType>httpResponse.headers[HttpHeader.ContentType],
     success: httpResponse.status < HttpStatusCode.BadRequest,
     statusCode: httpResponse.status,
-    body: await (contentType === HttpContentType.JSON ? httpResponse.json() : httpResponse.text()),
+    body: typeof httpResponse.data === "string" ? httpResponse.data : JSON.stringify(httpResponse.data, null, 2),
   };
 };
 
 export default {
   get,
-  getAsyncJSON,
-  getAsyncText,
+  getAsync,
   getMongodbDeployment,
   getPodLogs,
   deletePod,

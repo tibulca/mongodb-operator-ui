@@ -12,6 +12,7 @@ const mapK8SObjectWith = (kObj: { kind: string; metadata?: V1ObjectMeta; spec?: 
   ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
   kind: kObj.kind,
   spec: kObj.spec,
+  creationTimestamp: new Date(kObj.metadata?.creationTimestamp ?? 0).getTime(),
 });
 
 const crdUID = (name: string) => `crd-${name}`;
@@ -31,6 +32,7 @@ const getCRDsAndCRs = async () => {
       uid: crdUID(crd.spec.names.kind),
       name: crd.spec.names.kind,
       kind: K8SKind.CustomResourceDefinition,
+      creationTimestamp: new Date(crd.metadata?.creationTimestamp ?? 0).getTime(),
     });
 
     const crK8SObjects = kCRs.map((c: any) => ({

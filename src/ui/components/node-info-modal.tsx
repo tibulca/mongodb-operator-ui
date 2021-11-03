@@ -1,12 +1,13 @@
 import { useState } from "react";
 
-import { Modal, Typography, Box, Button, Stack, TextField } from "@mui/material";
+import { Modal, Typography, Box, Button, Stack, TextField, responsiveFontSizes } from "@mui/material";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 
 import apiClient from "../services/clients/api";
 import { HttpContentType } from "../../core/enums";
@@ -54,16 +55,23 @@ const downloadTextFile = (filename: string, text: string) => {
 };
 
 const executeAction = async (action: NodeHttpAction) => {
-  console.log("action", action);
-  const response = await apiClient.executeHttpAction(action);
-  if (response.contentType === HttpContentType.TextFile) {
-    downloadTextFile(`${action.group}-${action.label}-${Date.now()}.txt`, String(response.body));
+  try {
+    const response = await apiClient.executeHttpAction(action);
+    if (response.contentType === HttpContentType.TextFile) {
+      downloadTextFile(`${action.group}-${action.label}-${Date.now()}.txt`, String(response.body));
+    }
+    return response.success;
+  } catch (e) {
+    console.error(e);
+    return false;
   }
-
-  return response.success;
 };
 
-const renderActions = (actions: NodeHttpAction[], callback: (response: { text: string; isError: boolean }) => void) => {
+const renderActions = (
+  actions: NodeHttpAction[],
+  start: (action: NodeHttpAction) => void,
+  done: (action: NodeHttpAction, response: { text: string; isError: boolean }) => void
+) => {
   if (!actions || !actions.length) {
     return null;
   }
@@ -76,13 +84,15 @@ const renderActions = (actions: NodeHttpAction[], callback: (response: { text: s
     return acc;
   }, new Map<string, NodeHttpAction[]>());
 
-  const executeActionAndProcessResponse = (action: NodeHttpAction) =>
+  const executeActionAndProcessResponse = (action: NodeHttpAction) => {
+    start(action);
     executeAction(action).then((success) =>
-      callback({
+      done(action, {
         text: `"${action.description}" ${success ? "was successful" : "failed"}`,
         isError: !success,
       })
     );
+  };
 
   return Array.from(groupedActions.entries()).map(([group, groupActions]) =>
     groupActions.length === 1 ? (
@@ -132,6 +142,7 @@ const renderInfoSections = (
 const NodeInfoModal = (props: NodeInfoModalProps) => {
   const [expanded, setExpanded] = useState<string | false>("panel0");
   const [notification, setNotification] = useState<{ text: string; isError: boolean }>({ text: "", isError: false });
+  const [actionInProgress, setActionInProgress] = useState(false);
 
   return (
     <Modal
@@ -145,7 +156,18 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
           <Stack direction="row" spacing={2}>
             <h2>{props.title}</h2>
-            {renderActions(props.actions, (response: { text: string; isError: boolean }) => setNotification(response))}
+            {renderActions(
+              props.actions,
+              (action: NodeHttpAction) => setActionInProgress(true),
+              (action: NodeHttpAction, response: { text: string; isError: boolean }) => {
+                setActionInProgress(false), setNotification(response);
+              }
+            )}
+            {actionInProgress && (
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <CircularProgress />
+              </div>
+            )}
           </Stack>
         </Typography>
         {renderInfoSections(props.sections, expanded, (panel: string | false) => setExpanded(panel))}

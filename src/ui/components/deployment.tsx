@@ -5,17 +5,18 @@ import { MongodbDeployment, MongodbDeploymentUIModel } from "../../core/models";
 import NodeInfoModal from "./node-info-modal";
 import Network from "./network";
 import * as NetworkModels from "../models/network";
+import { K8SKind } from "../../core/enums";
 
 type DeploymentProps = {
   data: MongodbDeploymentUIModel;
 };
 
 const ResourceImageMap: Record<string, string> = {
-  pod: "/images/pod-256.png",
-  customresourcedefinition: "/images/crd-256.png",
-  deployment: "/images/deploy-256.png",
-  statefulset: "/images/sts-256.png",
-  replicaset: "/images/rs-256.png",
+  [K8SKind.Pod.toLowerCase()]: "/images/pod-256.png",
+  [K8SKind.CustomResourceDefinition.toLowerCase()]: "/images/crd-256.png",
+  [K8SKind.Deployment.toLowerCase()]: "/images/deploy-256.png",
+  [K8SKind.StatefulSet.toLowerCase()]: "/images/sts-256.png",
+  [K8SKind.ReplicaSet.toLowerCase()]: "/images/rs-256.png",
   mongodb: "/images/crd-u-256.png",
   mongodbcommunity: "/images/crd-u-256.png",
 };
@@ -91,6 +92,7 @@ const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
           kind: selectedNode.kind,
           namespace: selectedNode.namespace,
           status: selectedNode.status,
+          creationTimestamp: new Date(selectedNode.creationTimestamp).toLocaleString(),
         },
         null,
         2

@@ -1,3 +1,5 @@
+import { HttpMethod, K8SKind } from "./enums";
+
 export type CRD = {
   name: string;
   crs: {
@@ -8,7 +10,7 @@ export type CRD = {
 export type K8SObject = {
   uid: string;
   name: string;
-  kind: string;
+  kind: K8SKind | string;
   namespace?: string;
   ownerReference?: {
     // kind: string;
@@ -18,36 +20,35 @@ export type K8SObject = {
   dependsOnUIDs?: string[];
   status?: string;
   spec?: any;
+  childs?: string[]; // e.g. containers
 };
 
-export type Pod = K8SObject & { kind: "Pod" };
-export type Deployment = K8SObject & { kind: "Deployment" };
-export type StatefulSet = K8SObject & { kind: "StatefulSet" };
-export type CustomResource = K8SObject & {};
-export type CustomResourceDefinition = K8SObject & { kind: "CustomResourceDefinition" };
-
 export type MongodbDeployment = {
-  // clusters: {
-  //   name: string;
-  //   isCentral?: boolean;
-  // }[];
-  // operator: {
-  //   cluster: string;
-  //   namespace: string;
-  //   deployment: string;
-  //   pod: string;
-  // };
-  // opsManager: {
-  //   cluster: string;
-  //   namespace: string;
-  //   sts: string;
-  //   pods: string[];
-  // };
-  // mongodb: {
-  //   cluster: string;
-  //   namespace: string;
-  //   sts: string;
-  //   pods: string[];
-  // }[];
   k8sObjects: K8SObject[];
+};
+
+export type K8SObjectWithActions = K8SObject & {
+  actions?: {
+    group: string;
+    label: string;
+    url: string;
+    httpMethod: HttpMethod;
+  }[];
+};
+
+export type MongodbDeploymentWithActions = {
+  k8sObjects: K8SObjectWithActions[];
+};
+
+export type K8SObjectUIModel = K8SObjectWithActions & {
+  ui: {
+    location: {
+      x: number;
+      y: number;
+    };
+  };
+};
+
+export type MongodbDeploymentUIModel = {
+  k8sObjects: K8SObjectUIModel[];
 };

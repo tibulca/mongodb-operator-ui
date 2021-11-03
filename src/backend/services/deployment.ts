@@ -1,95 +1,91 @@
+import { V1ObjectMeta } from "@kubernetes/client-node";
+import { K8SKind, MongoDBCRDGroupSet, MongoDBKindSet, MongoDbOperatorLabelSet } from "../../core/enums";
 import { MongodbDeployment, K8SObject } from "../../core/models";
 import k8sClient from "./clients/k8s";
 
-const CRDGroups = ["mongodb.com", "mongodbcommunity.mongodb.com"];
+const DefaultOperatorNamespace = "mongodb";
 
-export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
-  let operatorNs = "mongodb";
+const mapK8SObjectWith = (kObj: { kind: string; metadata?: V1ObjectMeta; spec?: any }) => ({
+  uid: kObj.metadata?.uid ?? "-",
+  name: kObj.metadata?.name ?? "-",
+  namespace: kObj.metadata?.namespace,
+  ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
+  kind: kObj.kind,
+  spec: kObj.spec,
+});
 
-  const kCRDs = await k8sClient.getCRDs(CRDGroups);
+const crdUID = (name: string) => `crd-${name}`;
+
+const getCRDsAndCRs = async () => {
   const k8sObjects: K8SObject[] = [];
-  const allCRs: K8SObject[] = [];
+  const crUIDs: string[] = [];
+  let operatorNs = DefaultOperatorNamespace;
 
+  const kCRDs = await k8sClient.getCRDs(MongoDBCRDGroupSet);
   for (const crd of kCRDs) {
     const kCRs = await k8sClient.getCRs(crd.spec.group, crd.spec.versions[0].name, "", crd.spec.names.plural);
-    const mdbCR = kCRs.find((c) => c.kind === "MongoDB" || c.kind === "MongoDBMulti" || c.kind === "MongoDBCommunity");
+    const mdbCR = kCRs.find((c) => MongoDBKindSet.has(c.kind));
     operatorNs = mdbCR?.metadata.namespace ?? operatorNs;
 
     k8sObjects.push({
-      uid: `crd-${crd.spec.names.kind}`,
+      uid: crdUID(crd.spec.names.kind),
       name: crd.spec.names.kind,
-      kind: "CustomResourceDefinition",
+      kind: K8SKind.CustomResourceDefinition,
     });
 
-    const crs = kCRs.map((c: any) => ({
-      uid: c.metadata.uid,
-      name: c.metadata.name,
-      kind: c.kind,
-      namespace: c.metadata.namespace,
-      ownerReference: {
-        uid: `crd-${c.kind}`,
-      },
+    const crK8SObjects = kCRs.map((c: any) => ({
+      ...mapK8SObjectWith(c),
+      ownerReference: { uid: crdUID(c.kind) },
       status: c.status?.phase,
-      spec: c.spec,
     }));
-    k8sObjects.push(...crs);
-    allCRs.push(...crs);
+    k8sObjects.push(...crK8SObjects);
+    crUIDs.push(...crK8SObjects.map((o) => o.uid));
   }
 
-  const kPods = await k8sClient.getPods(operatorNs);
+  return { operatorNs, k8sObjects, crUIDs };
+};
+
+const getPods = async (namespace: string, crUIDs: string[]) => {
+  const kPods = await k8sClient.getPods(namespace);
+
   const operatorPod = kPods.items.find((p) =>
-    Object.values(p.metadata?.labels ?? {}).find((l) => l.includes("operator"))
+    Object.values(p.metadata?.labels ?? {}).find((l) => MongoDbOperatorLabelSet.has(l))
   );
 
-  kPods.items.forEach((kObj) =>
-    // todo: this map can be done generic
-    k8sObjects.push({
-      uid: kObj.metadata?.uid ?? "-",
-      kind: kObj.kind ?? "-",
-      name: kObj.metadata?.name ?? "-",
-      namespace: kObj.metadata?.namespace,
-      ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
-      dependsOnUIDs: kObj.metadata?.uid === operatorPod?.metadata?.uid ? allCRs.map((c) => c.uid) : undefined,
-      status: kObj.status?.phase,
-      spec: kObj.spec,
-    })
-  );
+  const podObjects = kPods.items.map((kObj) => ({
+    ...mapK8SObjectWith(kObj),
+    dependsOnUIDs: kObj.metadata?.uid === operatorPod?.metadata?.uid ? crUIDs : undefined,
+    status: kObj.status?.phase,
+    childs: [
+      ...(kObj.spec?.containers.map((c) => c.name) || []),
+      ...(kObj.spec?.initContainers?.map((c) => c.name) || []),
+    ],
+  }));
+
+  return {
+    operatorPod,
+    podObjects,
+  };
+};
+
+export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
+  const { k8sObjects, operatorNs, crUIDs } = await getCRDsAndCRs();
+
+  const { operatorPod, podObjects } = await getPods(operatorNs, crUIDs);
+  k8sObjects.push(...podObjects);
 
   const kDeployments = await k8sClient.getDeployments(operatorNs);
-  kDeployments.items.forEach((kObj) =>
-    k8sObjects.push({
-      uid: kObj.metadata?.uid ?? "-",
-      kind: kObj.kind ?? "-",
-      name: kObj.metadata?.name ?? "-",
-      namespace: kObj.metadata?.namespace,
-      ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
-      spec: kObj.spec,
-    })
-  );
+  k8sObjects.push(...kDeployments.items.map(mapK8SObjectWith));
 
   const kReplicaSets = await k8sClient.getReplicaSets(operatorNs);
-  kReplicaSets.items.forEach((kObj) =>
-    k8sObjects.push({
-      uid: kObj.metadata?.uid ?? "-",
-      kind: kObj.kind ?? "-",
-      name: kObj.metadata?.name ?? "-",
-      namespace: kObj.metadata?.namespace,
-      ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
-      spec: kObj.spec,
-    })
-  );
+  k8sObjects.push(...kReplicaSets.items.map(mapK8SObjectWith));
 
   const kStatefulSets = await k8sClient.getStatefulSets(operatorNs);
-  kStatefulSets.items.forEach((kObj) =>
-    k8sObjects.push({
-      uid: kObj.metadata?.uid ?? "-",
-      kind: kObj.kind ?? "-",
-      name: kObj.metadata?.name ?? "-",
-      namespace: kObj.metadata?.namespace,
-      ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
+  k8sObjects.push(
+    ...kStatefulSets.items.map((kObj) => ({
+      ...mapK8SObjectWith(kObj),
       dependsOnUIDs: operatorPod?.metadata?.uid ? [operatorPod?.metadata?.uid] : [],
-      spec: kObj.spec,
-    })
+    }))
   );
 
   return {

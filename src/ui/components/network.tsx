@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import Graph from "react-graph-vis";
+import NetworkGraph from "react-graph-vis";
+import { Network as VisNetwork, Options as VisOptions } from "vis";
 import { v4 } from "uuid";
 
 import "react-graph-vis/node_modules/vis-network/styles/vis-network.css";
 
 import * as NetworkModels from "../models/network";
 
-const options = {
+const options: VisOptions = {
   layout: {
     //hierarchical: true,
     hierarchical: {
@@ -46,6 +47,7 @@ const options = {
     color: "#888888",
     width: 1,
     smooth: {
+      enabled: true,
       type: "cubicBezier", //"vertical",
       forceDirection: "none",
       roundness: 0.1,
@@ -73,18 +75,18 @@ export type NetworkProps = {
 };
 
 const Network = (props: NetworkProps) => {
-  const [network, setNetwork] = useState(null);
+  const [network, setNetwork] = useState<VisNetwork | null>(null);
 
   return (
-    <Graph
+    <NetworkGraph
       key={v4()}
       graph={props.data}
       options={options}
       events={events(props.onSelectNode)}
-      getNetwork={(networ: any) => {
+      getNetwork={(n: VisNetwork) => {
         // if you want access to vis.js network api you can set the state
         // in a parent component using this property
-        setNetwork(network);
+        !network && setNetwork(n);
       }}
     />
   );

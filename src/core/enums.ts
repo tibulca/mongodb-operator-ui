@@ -25,6 +25,8 @@ export enum K8SKind {
   ReplicaSet = "ReplicaSet",
   StatefulSet = "StatefulSet",
   CustomResourceDefinition = "CustomResourceDefinition",
+  PersistentVolumeClaim = "PersistentVolumeClaim",
+  PersistentVolume = "PersistentVolume",
 }
 export const K8SKindSet = new Set(Object.values(K8SKind));
 

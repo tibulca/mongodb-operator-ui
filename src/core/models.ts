@@ -14,8 +14,8 @@ export type K8SObject = {
   namespace?: string;
   creationTimestamp: number;
   ownerReference?: {
-    // kind: string;
-    // name: string;
+    kind: K8SKind | string;
+    name: string;
     uid: string;
   };
   dependsOnUIDs?: string[];

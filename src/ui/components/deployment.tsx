@@ -17,6 +17,8 @@ const ResourceImageMap: Record<string, string> = {
   [K8SKind.Deployment.toLowerCase()]: "/images/deploy-256.png",
   [K8SKind.StatefulSet.toLowerCase()]: "/images/sts-256.png",
   [K8SKind.ReplicaSet.toLowerCase()]: "/images/rs-256.png",
+  [K8SKind.PersistentVolume.toLowerCase()]: "/images/pv-256.png",
+  [K8SKind.PersistentVolumeClaim.toLowerCase()]: "/images/pvc-256.png",
   mongodb: "/images/crd-u-256.png",
   mongodbcommunity: "/images/crd-u-256.png",
 };
@@ -24,6 +26,23 @@ const ResourceImageMap: Record<string, string> = {
 const networkDataContainer = () => {
   const nodes: NetworkModels.Node[] = [];
   const edges: NetworkModels.Edge[] = [];
+
+  const nodeTitle = (title: string) =>
+    title
+      .split("-")
+      .reduce(
+        (acc, w) => {
+          if (acc[acc.length - 1].length + w.length < 18) {
+            acc[acc.length - 1] += w + "-";
+          } else {
+            acc.push(w + "-");
+          }
+          return acc;
+        },
+        [""]
+      )
+      .join("\n")
+      .slice(0, -1);
 
   return {
     addNode: (
@@ -37,7 +56,7 @@ const networkDataContainer = () => {
       const image = ResourceImageMap[kind.toLowerCase()];
       const node = {
         id: uid,
-        label: `<b>${label}</b>`,
+        label: nodeTitle(label),
         title: tooltip,
         group: kind,
         shape: image ? "image" : undefined,
@@ -99,6 +118,22 @@ const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
       ),
     },
   ];
+
+  if (selectedNode.ownerReference?.uid && selectedNode.ownerReference.uid != "n/a") {
+    sections.push({
+      title: "Owner",
+      content: YAML.stringify(
+        {
+          uid: selectedNode.ownerReference?.uid,
+          kind: selectedNode.ownerReference?.kind,
+          name: selectedNode.ownerReference?.name,
+        },
+        null,
+        2
+      ),
+    });
+  }
+
   if (selectedNode.spec) {
     sections.push({
       title: "Specs",

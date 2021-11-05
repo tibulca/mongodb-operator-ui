@@ -1,13 +1,21 @@
 import { useState } from "react";
 
-import { Modal, Typography, Box, Button, Stack, TextField, responsiveFontSizes } from "@mui/material";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
+import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Modal,
+  Typography,
+  Box,
+  Button,
+  Stack,
+  Snackbar,
+  TextField,
+  CircularProgress,
+  responsiveFontSizes,
+} from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
 
 import apiClient from "../services/clients/api";
 import { HttpContentType } from "../../core/enums";

@@ -81,6 +81,18 @@ const getCRs = async (group: string, version: string, namespace: string, plural:
     .listNamespacedCustomObject(group, version, namespace, plural)
     .then((res) => <any[]>(<any>res.body).items);
 
+const getPersistentVolumeClaims = async (namespace: string) =>
+  k8sApi.listNamespacedPersistentVolumeClaim(namespace).then((res) => ({
+    ...res.body,
+    items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolumeClaim })),
+  }));
+
+const getPersistentVolumes = async () =>
+  k8sApi.listPersistentVolume().then((res) => ({
+    ...res.body,
+    items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolume })),
+  }));
+
 export default {
   getPods,
   getDeployments,
@@ -91,4 +103,6 @@ export default {
   deletePod,
   readPodLogs,
   execCmdInPod,
+  getPersistentVolumeClaims,
+  getPersistentVolumes,
 };

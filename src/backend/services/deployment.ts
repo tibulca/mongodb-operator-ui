@@ -6,10 +6,16 @@ import k8sClient from "./clients/k8s";
 const DefaultOperatorNamespace = "mongodb";
 
 const mapK8SObjectWith = (kObj: { kind: string; metadata?: V1ObjectMeta; spec?: any }) => ({
-  uid: kObj.metadata?.uid ?? "-",
-  name: kObj.metadata?.name ?? "-",
+  uid: kObj.metadata?.uid ?? "n/a",
+  name: kObj.metadata?.name ?? "n/a",
   namespace: kObj.metadata?.namespace,
-  ownerReference: kObj.metadata?.ownerReferences ? { uid: kObj.metadata?.ownerReferences[0].uid } : undefined,
+  ownerReference: kObj.metadata?.ownerReferences
+    ? {
+        uid: kObj.metadata?.ownerReferences[0].uid,
+        kind: kObj.metadata?.ownerReferences[0].kind,
+        name: kObj.metadata?.ownerReferences[0].name,
+      }
+    : undefined,
   kind: kObj.kind,
   spec: kObj.spec,
   creationTimestamp: new Date(kObj.metadata?.creationTimestamp ?? 0).getTime(),
@@ -37,7 +43,7 @@ const getCRDsAndCRs = async () => {
 
     const crK8SObjects = kCRs.map((c: any) => ({
       ...mapK8SObjectWith(c),
-      ownerReference: { uid: crdUID(c.kind) },
+      ownerReference: { uid: crdUID(c.kind), kind: K8SKind.CustomResourceDefinition, name: c.kind },
       status: c.status?.phase,
     }));
     k8sObjects.push(...crK8SObjects);
@@ -62,6 +68,9 @@ const getPods = async (namespace: string, crUIDs: string[]) => {
       ...(kObj.spec?.containers.map((c) => c.name) || []),
       ...(kObj.spec?.initContainers?.map((c) => c.name) || []),
     ],
+    pvcs: kObj.spec?.volumes?.map((v) => v.persistentVolumeClaim?.claimName ?? "").filter((pvc) => pvc) || [],
+    secrets: kObj.spec?.volumes?.map((v) => v.secret?.secretName ?? "").filter((s) => s) || [],
+    configMaps: kObj.spec?.volumes?.map((v) => v.configMap?.name ?? "").filter((cf) => cf) || [],
   }));
 
   return {
@@ -87,6 +96,33 @@ export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
     ...kStatefulSets.items.map((kObj) => ({
       ...mapK8SObjectWith(kObj),
       dependsOnUIDs: operatorPod?.metadata?.uid ? [operatorPod?.metadata?.uid] : [],
+    }))
+  );
+
+  const kPVCs = await k8sClient.getPersistentVolumeClaims(operatorNs);
+  k8sObjects.push(
+    ...kPVCs.items.map((kObj) => {
+      const ownerPod = podObjects.find((p) => p.pvcs.includes(kObj.metadata?.name ?? "n/a"));
+      return {
+        ...mapK8SObjectWith(kObj),
+        ownerReference: {
+          uid: ownerPod?.uid ?? "n/a",
+          kind: ownerPod ? K8SKind.Pod : "n/a",
+          name: ownerPod?.name ?? "n/a",
+        },
+      };
+    })
+  );
+
+  const kPVs = await k8sClient.getPersistentVolumes();
+  k8sObjects.push(
+    ...kPVs.items.map((kObj) => ({
+      ...mapK8SObjectWith(kObj),
+      ownerReference: {
+        uid: kObj.spec?.claimRef?.uid ?? "n/a",
+        kind: kObj.spec?.claimRef?.kind ?? "n/a",
+        name: kObj.spec?.claimRef?.name ?? "n/a",
+      },
     }))
   );
 

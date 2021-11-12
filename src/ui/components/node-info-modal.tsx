@@ -24,7 +24,7 @@ import PositionedMenu from "./positioned-menu";
 
 const style = {
   position: "absolute" as "absolute",
-  top: "50%",
+  top: "53%",
   left: "50%",
   transform: "translate(-50%, -50%)",
   width: "80%",
@@ -32,6 +32,7 @@ const style = {
   border: "2px solid #000",
   boxShadow: 24,
   p: 4,
+  height: "90%",
 };
 
 type InfoSection = {
@@ -139,7 +140,7 @@ const renderInfoSections = (
       </AccordionSummary>
       <AccordionDetails>
         <Typography>
-          <TextField multiline maxRows={20} fullWidth disabled value={s.content} />
+          <TextField multiline maxRows={18} fullWidth disabled value={s.content} />
           {/* <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre> */}
         </Typography>
       </AccordionDetails>
@@ -160,7 +161,7 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
       aria-describedby="modal-modal-description"
       style={{ overflow: "scroll" }}
     >
-      <Box sx={style}>
+      <Box role="modal" sx={style}>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
           <Stack direction="row" spacing={2}>
             <h2>{props.title}</h2>

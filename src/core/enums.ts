@@ -27,6 +27,7 @@ export enum K8SKind {
   CustomResourceDefinition = "CustomResourceDefinition",
   PersistentVolumeClaim = "PersistentVolumeClaim",
   PersistentVolume = "PersistentVolume",
+  NA = "N/A",
 }
 export const K8SKindSet = new Set(Object.values(K8SKind));
 
@@ -34,6 +35,7 @@ export enum MongoDBKind {
   MongoDB = "MongoDB",
   MongoDBMultiCluster = "MongoDBMulti",
   MongoDBCommunity = "MongoDBCommunity",
+  MongoDBUser = "MongoDBUser",
 }
 export const MongoDBKindSet = new Set(Object.values(MongoDBKind));
 

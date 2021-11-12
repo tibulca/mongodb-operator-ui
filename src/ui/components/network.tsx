@@ -35,6 +35,10 @@ const options: VisOptions = {
     },
   },
   groups: {
+    Operator: {
+      size: 50,
+      font: { size: 18 },
+    },
     // Pod: {
     //   shapeProperties: { borderDashes: [5, 5] },
     //   color: { border: "#334433", background: "#339933" },

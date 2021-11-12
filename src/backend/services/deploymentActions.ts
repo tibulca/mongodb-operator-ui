@@ -1,8 +1,8 @@
 import { K8SKind, HttpMethod } from "../../core/enums";
-import { K8SObject, MongodbDeploymentWithActions, NodeHttpAction } from "../../core/models";
+import { K8SResource, MongodbDeploymentWithActions, NodeHttpAction } from "../../core/models";
 import { getMongodbDeployment } from "./deployment";
 
-const getActions = (o: K8SObject): NodeHttpAction[] => {
+const getActions = (o: K8SResource): NodeHttpAction[] => {
   const labelIsSameAsGroup = o.childs && o.childs.length > 1;
 
   switch (o.kind) {
@@ -42,6 +42,6 @@ const getActions = (o: K8SObject): NodeHttpAction[] => {
 export const getMongodbDeploymentWithActions = async (): Promise<MongodbDeploymentWithActions> => {
   const deployment = await getMongodbDeployment();
   return {
-    k8sObjects: deployment.k8sObjects.map((o) => ({ ...o, actions: getActions(o) })),
+    k8sResources: deployment.k8sResources.map((o) => ({ ...o, actions: getActions(o) })),
   };
 };

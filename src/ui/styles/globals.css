@@ -19,3 +19,12 @@ a {
 div#__next {
   height: 100%;
 }
+
+.MuiBox-root[role="layout"] {
+  height: 100%;
+  padding: 0;
+}
+
+.MuiBox-root[role="main"] {
+  padding: 0;
+}

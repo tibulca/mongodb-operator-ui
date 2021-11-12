@@ -1,17 +1,21 @@
 import React, { useState } from "react";
 import YAML from "yaml";
 
-import { MongodbDeployment, MongodbDeploymentUIModel } from "../../core/models";
+import { K8SResource, MongodbDeployment, MongodbDeploymentUIModel } from "../../core/models";
 import NodeInfoModal from "./node-info-modal";
+import NodeClusterModal from "./node-cluster-modal";
 import Network from "./network";
 import * as NetworkModels from "../models/network";
 import { K8SKind } from "../../core/enums";
+import { DisplaySettings } from "../models/settings";
 
 type DeploymentProps = {
   data: MongodbDeploymentUIModel;
+  settings: DisplaySettings;
 };
 
 const ResourceImageMap: Record<string, string> = {
+  ["operator"]: "/images/pod-256.png",
   [K8SKind.Pod.toLowerCase()]: "/images/pod-256.png",
   [K8SKind.CustomResourceDefinition.toLowerCase()]: "/images/crd-256.png",
   [K8SKind.Deployment.toLowerCase()]: "/images/deploy-256.png",
@@ -21,7 +25,12 @@ const ResourceImageMap: Record<string, string> = {
   [K8SKind.PersistentVolumeClaim.toLowerCase()]: "/images/pvc-256.png",
   mongodb: "/images/crd-u-256.png",
   mongodbcommunity: "/images/crd-u-256.png",
+  mongodbopsmanager: "/images/crd-u-256.png",
+  mongodbuser: "/images/user-256.png",
 };
+
+const isOperatorPod = (kRes: K8SResource) =>
+  kRes.kind === K8SKind.Pod && kRes.name.includes("operator") && kRes.ownerReference?.kind === K8SKind.ReplicaSet;
 
 const networkDataContainer = () => {
   const nodes: NetworkModels.Node[] = [];
@@ -50,8 +59,8 @@ const networkDataContainer = () => {
       label: string,
       tooltip: string,
       kind: string,
-      edgeFromNodes?: { uid: string; dashes?: boolean }[],
-      edgeToNodes?: { uid: string; dashes?: boolean }[]
+      edgeFromNodes: { uid: string; dashes?: boolean }[],
+      edgeToNodes: { uid: string; dashes?: boolean }[]
     ) => {
       const image = ResourceImageMap[kind.toLowerCase()];
       const node = {
@@ -75,28 +84,30 @@ const networkDataContainer = () => {
   };
 };
 
-const buildGraph = (deployment: MongodbDeployment) => {
+const buildGraph = (settings: DisplaySettings, deployment: MongodbDeployment) => {
   const graph = networkDataContainer();
 
-  deployment.k8sObjects.forEach((kObj) => {
-    graph.addNode(
-      kObj.uid,
-      kObj.name,
-      `${kObj.kind}: ${kObj.name}${kObj.status ? ` - ${kObj.status}` : ""}`,
-      kObj.kind,
-      [
-        { uid: kObj.ownerReference?.uid ?? "" },
-        ...(kObj.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
-      ].filter((e) => e.uid),
-      []
-    );
-  });
+  deployment.k8sResources
+    .filter((r) => !settings.HideResources.has(r.kind))
+    .forEach((kRes) => {
+      graph.addNode(
+        kRes.uid,
+        kRes.name,
+        `${kRes.kind}: ${kRes.name}${kRes.status ? ` - ${kRes.status}` : ""}`,
+        isOperatorPod(kRes) ? "Operator" : kRes.kind,
+        [
+          { uid: kRes.ownerReference?.uid ?? "" },
+          ...(kRes.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
+        ].filter((e) => e.uid),
+        []
+      );
+    });
 
   return graph.data();
 };
 
 const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
-  const selectedNode = data.k8sObjects.find((o) => o.uid === uid);
+  const selectedNode = data.k8sResources.find((o) => o.uid === uid);
   if (!uid || !selectedNode) {
     return { title: "", sections: [] };
   }
@@ -154,7 +165,7 @@ const Deployment = (props: DeploymentProps) => {
   const nodeDetails = getNodeDetails(props.data, selectedNodeUID);
 
   return (
-    <div style={{ height: "calc(100% - 140px)", width: "100%", backgroundColor: "white" }}>
+    <div style={{ height: "calc(100% - 64px)", backgroundColor: "white" }}>
       <NodeInfoModal
         show={!!selectedNodeUID}
         title={nodeDetails.title}
@@ -169,7 +180,7 @@ const Deployment = (props: DeploymentProps) => {
       />
 
       <div style={{ border: "1px solid darkgray", height: "100%" }}>
-        <Network data={buildGraph(props.data)} onSelectNode={setSelectedNodeUID} />
+        <Network data={buildGraph(props.settings, props.data)} onSelectNode={setSelectedNodeUID} />
       </div>
     </div>
   );

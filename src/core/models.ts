@@ -1,4 +1,4 @@
-import { HttpMethod, K8SKind } from "./enums";
+import { HttpMethod, K8SKind, MongoDBKind } from "./enums";
 
 export type CRD = {
   name: string;
@@ -7,14 +7,14 @@ export type CRD = {
   }[];
 };
 
-export type K8SObject = {
+export type K8SResource = {
   uid: string;
   name: string;
-  kind: K8SKind | string;
+  kind: K8SKind | MongoDBKind;
   namespace?: string;
   creationTimestamp: number;
   ownerReference?: {
-    kind: K8SKind | string;
+    kind: K8SKind | MongoDBKind;
     name: string;
     uid: string;
   };
@@ -25,7 +25,7 @@ export type K8SObject = {
 };
 
 export type MongodbDeployment = {
-  k8sObjects: K8SObject[];
+  k8sResources: K8SResource[];
 };
 
 export type NodeHttpAction = {
@@ -36,15 +36,15 @@ export type NodeHttpAction = {
   httpMethod: HttpMethod;
 };
 
-export type K8SObjectWithActions = K8SObject & {
+export type K8SResourceWithActions = K8SResource & {
   actions?: NodeHttpAction[];
 };
 
 export type MongodbDeploymentWithActions = {
-  k8sObjects: K8SObjectWithActions[];
+  k8sResources: K8SResourceWithActions[];
 };
 
-export type K8SObjectUIModel = K8SObjectWithActions & {
+export type K8SResourceUIModel = K8SResourceWithActions & {
   ui: {
     location: {
       x: number;
@@ -54,5 +54,5 @@ export type K8SObjectUIModel = K8SObjectWithActions & {
 };
 
 export type MongodbDeploymentUIModel = {
-  k8sObjects: K8SObjectUIModel[];
+  k8sResources: K8SResourceUIModel[];
 };

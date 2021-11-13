@@ -88,7 +88,7 @@ const buildGraph = (settings: DisplaySettings, deployment: MongodbDeployment) =>
   const graph = networkDataContainer();
 
   deployment.k8sResources
-    .filter((r) => !settings.HideResources.has(r.kind))
+    .filter((r) => !settings.HideResources.includes(r.kind))
     .forEach((kRes) => {
       graph.addNode(
         kRes.uid,

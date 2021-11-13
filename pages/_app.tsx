@@ -10,9 +10,9 @@ function SafeHydrate({ children }: any) {
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    // <SafeHydrate>
-    <Component {...pageProps} />
-    // </SafeHydrate>
+    <SafeHydrate>
+      <Component {...pageProps} />
+    </SafeHydrate>
   );
 }
 

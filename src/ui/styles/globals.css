@@ -20,6 +20,10 @@ div#__next {
   height: 100%;
 }
 
+div#__next > div {
+  height: 100%;
+}
+
 .MuiBox-root[role="layout"] {
   height: 100%;
   padding: 0;

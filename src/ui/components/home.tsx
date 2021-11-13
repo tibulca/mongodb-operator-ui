@@ -28,6 +28,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import Head from "next/head";
 import { DisplaySettings } from "../models/settings";
 import AppHeader from "./app-header";
+import localStorage from "../services/localStorage";
 
 //import "../src/ui/styles/globals.css";
 import theme from "../theme";
@@ -87,9 +88,16 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 }));
 
 const Home: NextPage = () => {
-  const [settings, setSettings] = React.useState<DisplaySettings>({
-    HideResources: new Set(),
-  });
+  const [settings, setSettings] = React.useState<DisplaySettings>(
+    localStorage.getItem<DisplaySettings>("settings") ?? {
+      HideResources: [],
+    }
+  );
+  const handleChangeSettings = (settings: DisplaySettings) => {
+    setSettings(settings);
+    localStorage.setItem("settings", settings);
+  };
+
   const [showSettings, setShowSettings] = React.useState<boolean>(false);
   const [themeMode, setThemeMode] = React.useState<"light" | "dark">("dark");
   const colorMode = React.useMemo(
@@ -192,7 +200,7 @@ const Home: NextPage = () => {
           <SettingsModal
             show={showSettings}
             settings={settings}
-            onUpdate={setSettings}
+            onUpdate={handleChangeSettings}
             onClose={() => setShowSettings(false)}
           />
         </Box>

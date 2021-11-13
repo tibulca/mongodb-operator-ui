@@ -34,15 +34,15 @@ const ResourcesToFilter = [
 ];
 
 const SettingsModal = (props: SettingsModalProps) => {
-  const showKind = (kind: K8SKind | MongoDBKind) => !props.settings.HideResources.has(kind);
+  const showKind = (kind: K8SKind | MongoDBKind) => !props.settings.HideResources.includes(kind);
 
   const handleShowKindChange = (kind: K8SKind | MongoDBKind) => (event: React.ChangeEvent<HTMLInputElement>) => {
     // todo: deep clone props.settings
     const s = { ...props.settings };
     if (event.target.checked) {
-      s.HideResources.delete(kind);
+      s.HideResources = s.HideResources.filter((k) => k != kind);
     } else {
-      s.HideResources.add(kind);
+      s.HideResources.push(kind);
     }
     props.onUpdate(s);
   };

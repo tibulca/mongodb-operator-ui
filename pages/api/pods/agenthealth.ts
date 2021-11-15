@@ -4,6 +4,7 @@ import { HttpContentType, HttpHeader, HttpStatusCode } from "../../../src/core/e
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<string>) => {
   const output = await getAgentHealtStatusFile(
+    <string>req.query.context,
     <string>req.query.namespace,
     <string>req.query.pod,
     <string>req.query.container

@@ -1,27 +1,65 @@
 import * as stream from "stream";
 import * as k8s from "@kubernetes/client-node";
 import { K8SKind } from "../../../core/enums";
+import { Context } from "../../../core/models";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
-const k8sExec = new k8s.Exec(kc);
-const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
-const k8sApiExt = kc.makeApiClient(k8s.ApiextensionsV1Api);
-const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
-const k8sCustomObjectsApi = kc.makeApiClient(k8s.CustomObjectsApi);
 
-const getPods = async (namespace: string) =>
-  k8sApi
-    .listNamespacedPod(namespace)
+const allClients = new Map(
+  kc.getContexts().map((ctx) => {
+    const conf = new k8s.KubeConfig();
+    conf.loadFromDefault();
+    conf.setCurrentContext(ctx.name);
+
+    return [
+      ctx.name,
+      {
+        k8sExec: new k8s.Exec(conf),
+        k8sApi: conf.makeApiClient(k8s.CoreV1Api),
+        k8sApiExt: conf.makeApiClient(k8s.ApiextensionsV1Api),
+        k8sAppsApi: conf.makeApiClient(k8s.AppsV1Api),
+        k8sCustomObjectsApi: conf.makeApiClient(k8s.CustomObjectsApi),
+      },
+    ];
+  })
+);
+
+const clients = (context: string) => {
+  const ctxClients = allClients.get(context);
+  if (!ctxClients) {
+    throw new Error(`invalid context "${context}"`);
+  }
+  return ctxClients;
+};
+
+const getContexts = (): { contexts: Context[]; currentContext: string } => ({
+  contexts: kc.getContexts(),
+  currentContext: kc.getCurrentContext(),
+});
+
+const getPods = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sApi.listNamespacedPod(namespace)
     .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.Pod })) }));
 
-const deletePod = async (namespace: string, podName: string) =>
-  k8sApi.deleteNamespacedPod(podName, namespace).then((res) => res.body);
+const deletePod = async (context: string, namespace: string, podName: string) =>
+  clients(context)
+    .k8sApi.deleteNamespacedPod(podName, namespace)
+    .then((res) => res.body);
 
-const readPodLogs = async (namespace: string, podName: string, container: string) =>
-  k8sApi.readNamespacedPodLog(podName, namespace, container).then((res) => res.body);
+const readPodLogs = async (context: string, namespace: string, podName: string, container: string) =>
+  clients(context)
+    .k8sApi.readNamespacedPodLog(podName, namespace, container)
+    .then((res) => res.body);
 
-const execCmdInPod = (namespace: string, podName: string, container: string, command: string[]): Promise<string> => {
+const execCmdInPod = (
+  context: string,
+  namespace: string,
+  podName: string,
+  container: string,
+  command: string[]
+): Promise<string> => {
   //const wStream = new stream.Writable();
   let output = "";
 
@@ -34,7 +72,7 @@ const execCmdInPod = (namespace: string, podName: string, container: string, com
   });
 
   return new Promise((resolve, reject) => {
-    k8sExec.exec(
+    clients(context).k8sExec.exec(
       namespace,
       podName,
       container,
@@ -57,43 +95,58 @@ const execCmdInPod = (namespace: string, podName: string, container: string, com
 };
 
 // todo: set "kind" if not found in the response
-const getDeployments = async (namespace: string) =>
-  k8sAppsApi
-    .listNamespacedDeployment(namespace)
+const getDeployments = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sAppsApi.listNamespacedDeployment(namespace)
     .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.Deployment })) }));
 
-const getReplicaSets = async (namespace: string) =>
-  k8sAppsApi
-    .listNamespacedReplicaSet(namespace)
+const getReplicaSets = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sAppsApi.listNamespacedReplicaSet(namespace)
     .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.ReplicaSet })) }));
 
-const getStatefulSets = async (namespace: string) =>
-  k8sAppsApi.listNamespacedStatefulSet(namespace).then((res) => ({
-    ...res.body,
-    items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.StatefulSet })),
-  }));
+const getStatefulSets = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sAppsApi.listNamespacedStatefulSet(namespace)
+    .then((res) => ({
+      ...res.body,
+      items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.StatefulSet })),
+    }));
 
-const getCRDs = async (groups: Set<string>) =>
-  k8sApiExt.listCustomResourceDefinition().then((res) => res.body.items.filter((crd) => groups.has(crd.spec.group)));
+const getCRDs = async (context: string, groups: Set<string>) =>
+  clients(context)
+    .k8sApiExt.listCustomResourceDefinition()
+    .then((res) => res.body.items.filter((crd) => groups.has(crd.spec.group)));
 
-const getCRs = async (group: string, version: string, namespace: string, plural: string): Promise<any[]> =>
-  k8sCustomObjectsApi
-    .listNamespacedCustomObject(group, version, namespace, plural)
+const getCRs = async (
+  context: string,
+  group: string,
+  version: string,
+  namespace: string,
+  plural: string
+): Promise<any[]> =>
+  clients(context)
+    .k8sCustomObjectsApi.listNamespacedCustomObject(group, version, namespace, plural)
     .then((res) => <any[]>(<any>res.body).items);
 
-const getPersistentVolumeClaims = async (namespace: string) =>
-  k8sApi.listNamespacedPersistentVolumeClaim(namespace).then((res) => ({
-    ...res.body,
-    items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolumeClaim })),
-  }));
+const getPersistentVolumeClaims = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sApi.listNamespacedPersistentVolumeClaim(namespace)
+    .then((res) => ({
+      ...res.body,
+      items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolumeClaim })),
+    }));
 
-const getPersistentVolumes = async () =>
-  k8sApi.listPersistentVolume().then((res) => ({
-    ...res.body,
-    items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolume })),
-  }));
+const getPersistentVolumes = async (context: string) =>
+  clients(context)
+    .k8sApi.listPersistentVolume()
+    .then((res) => ({
+      ...res.body,
+      items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolume })),
+    }));
 
 export default {
+  getContexts,
   getPods,
   getDeployments,
   getReplicaSets,

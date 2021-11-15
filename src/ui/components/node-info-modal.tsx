@@ -109,7 +109,7 @@ const renderActions = (
         {groupActions[0].label}
       </Button>
     ) : (
-      <div style={{ display: "flex", alignItems: "center" }}>
+      <div key={group} style={{ display: "flex", alignItems: "center" }}>
         <PositionedMenu
           title={group}
           options={groupActions.map((a) => a.label)}

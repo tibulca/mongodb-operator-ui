@@ -1,13 +1,14 @@
 import k8sClient from "./clients/k8s";
 
-export const deletePod = async (namespace: string, pod: string) => k8sClient.deletePod(namespace, pod);
+export const deletePod = async (context: string, namespace: string, pod: string) =>
+  k8sClient.deletePod(context, namespace, pod);
 
-export const getPodLogs = async (namespace: string, pod: string, container: string) =>
-  k8sClient.readPodLogs(namespace, pod, container);
+export const getPodLogs = async (context: string, namespace: string, pod: string, container: string) =>
+  k8sClient.readPodLogs(context, namespace, pod, container);
 
-export const getAgentHealtStatusFile = async (namespace: string, pod: string, container: string) => {
+export const getAgentHealtStatusFile = async (context: string, namespace: string, pod: string, container: string) => {
   const command = ["/bin/sh", "-c", "cat ${AGENT_STATUS_FILEPATH:-${MMS_LOG_DIR}/agent-health-status.json}"];
-  const output = await k8sClient.execCmdInPod(namespace, pod, container, command);
+  const output = await k8sClient.execCmdInPod(context, namespace, pod, container, command);
 
   return {
     namespace,

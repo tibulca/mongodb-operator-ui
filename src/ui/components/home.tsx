@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Deployment from "./deployment";
 import SettingsModal from "./settings";
 import apiClient from "../services/clients/api";
-import { MongodbDeploymentUIModel } from "../../core/models";
+import { Context, MongodbDeploymentUIModel } from "../../core/models";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 //import Container from "@mui/material/Container";
@@ -33,6 +33,7 @@ import localStorage from "../services/localStorage";
 //import "../src/ui/styles/globals.css";
 import theme from "../theme";
 import styles from "../styles/Home.module.css";
+import { K8SKind } from "../../core/enums";
 
 const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
 
@@ -87,14 +88,22 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
   }),
 }));
 
+const localStorageSettings = () =>
+  localStorage.getItem<DisplaySettings>("settings") ?? {
+    HideResources: [K8SKind.PersistentVolume, K8SKind.PersistentVolumeClaim],
+    Context: { contexts: [], currentContext: "" },
+  };
+
 const Home: NextPage = () => {
-  const [settings, setSettings] = React.useState<DisplaySettings>(
-    localStorage.getItem<DisplaySettings>("settings") ?? {
-      HideResources: [],
-    }
-  );
+  const [settings, setSettings] = React.useState<DisplaySettings>(localStorageSettings());
   const handleChangeSettings = (settings: DisplaySettings) => {
     setSettings(settings);
+    if (localStorageSettings().Context.currentContext !== settings.Context.currentContext) {
+      apiClient.getMongodbDeployment(settings.Context.currentContext, setDeployment, (err) => {
+        console.log(err);
+        /* display err */
+      });
+    }
     localStorage.setItem("settings", settings);
   };
 
@@ -112,14 +121,28 @@ const Home: NextPage = () => {
   const handleDrawerOpen = () => setDrawerOpen(true);
   const handleDrawerClose = () => setDrawerOpen(false);
 
-  useEffect(
-    () =>
-      apiClient.getMongodbDeployment(setDeployment, (err) => {
+  useEffect(() => {
+    if (settings.Context.currentContext) {
+      apiClient.getMongodbDeployment(settings.Context.currentContext, setDeployment, (err) => {
         console.log(err);
         /* display err */
-      }),
-    []
-  );
+      });
+    } else {
+      apiClient.getContexts(
+        (c) => {
+          setSettings({ ...settings, Context: c });
+          apiClient.getMongodbDeployment(c.currentContext, setDeployment, (err) => {
+            console.log(err);
+            /* display err */
+          });
+        },
+        (err) => {
+          console.log(err);
+          /* display err */
+        }
+      );
+    }
+  }, []);
 
   return (
     //<Container maxWidth="xl" style={{ height: "100%" }}>
@@ -131,7 +154,7 @@ const Home: NextPage = () => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Box sx={{ display: "flex" }} role="layout">
-          <AppHeader position="fixed" open={drawerOpen} sx={{ bgcolor: bgColor(theme) }} drawerWidth={drawerWidth}>
+          <AppHeader position="fixed" open={drawerOpen} sx={{ bgcolor: bgColor(theme) }} drawerwidth={drawerWidth}>
             <Toolbar>
               <IconButton
                 color="inherit"

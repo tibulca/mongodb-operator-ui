@@ -1,8 +1,18 @@
-import { Modal, Typography, Box, Stack } from "@mui/material";
+import {
+  Modal,
+  Typography,
+  Box,
+  Stack,
+  FormControl,
+  FormGroup,
+  FormControlLabel,
+  Checkbox,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+} from "@mui/material";
 import { DisplaySettings } from "../models/settings";
-import Checkbox from "@mui/material/Checkbox";
-import FormGroup from "@mui/material/FormGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import { K8SKind, MongoDBKind } from "../../core/enums";
 
 const style = {
@@ -47,6 +57,15 @@ const SettingsModal = (props: SettingsModalProps) => {
     props.onUpdate(s);
   };
 
+  const handleContextChange = (event: SelectChangeEvent) =>
+    props.onUpdate({
+      ...props.settings,
+      Context: {
+        ...props.settings.Context,
+        currentContext: event.target.value as string,
+      },
+    });
+
   return (
     <Modal
       open={props.show}
@@ -60,6 +79,22 @@ const SettingsModal = (props: SettingsModalProps) => {
           <Stack direction="row" spacing={2}>
             <h2>Display settings</h2>
           </Stack>
+          <FormControl fullWidth>
+            <InputLabel id="demo-simple-select-label">Context</InputLabel>
+            <Select
+              labelId="demo-simple-select-label"
+              id="demo-simple-select"
+              value={props.settings.Context.currentContext}
+              label="Age"
+              onChange={handleContextChange}
+            >
+              {props.settings.Context.contexts.map((c) => (
+                <MenuItem key={c.name} value={c.name}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <h3>Show</h3>
           <FormGroup>
             {ResourcesToFilter.map((k) => (

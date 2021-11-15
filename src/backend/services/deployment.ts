@@ -23,14 +23,14 @@ const mapK8SResourceWith = (kObj: { kind: string; metadata?: V1ObjectMeta; spec?
 
 const crdUID = (name: string) => `crd-${name}`;
 
-const getCRDsAndCRs = async () => {
+const getCRDsAndCRs = async (context: string) => {
   const k8sResources: K8SResource[] = [];
   const crUIDs: string[] = [];
   let operatorNs = DefaultOperatorNamespace;
 
-  const kCRDs = await k8sClient.getCRDs(MongoDBCRDGroupSet);
+  const kCRDs = await k8sClient.getCRDs(context, MongoDBCRDGroupSet);
   for (const crd of kCRDs) {
-    const kCRs = await k8sClient.getCRs(crd.spec.group, crd.spec.versions[0].name, "", crd.spec.names.plural);
+    const kCRs = await k8sClient.getCRs(context, crd.spec.group, crd.spec.versions[0].name, "", crd.spec.names.plural);
     const mdbCR = kCRs.find((c) => MongoDBKindSet.has(c.kind));
     operatorNs = mdbCR?.metadata.namespace ?? operatorNs;
 
@@ -53,11 +53,13 @@ const getCRDsAndCRs = async () => {
   return { operatorNs, k8sResources: k8sResources, crUIDs };
 };
 
-const getPods = async (namespace: string, crUIDs: string[]) => {
-  const kPods = await k8sClient.getPods(namespace);
+const getPods = async (context: string, namespace: string, crUIDs: string[]) => {
+  const kPods = await k8sClient.getPods(context, namespace);
 
   const operatorPod = kPods.items.find((p) =>
-    Object.values(p.metadata?.labels ?? {}).find((l) => MongoDbOperatorLabelSet.has(l))
+    Object.entries(p.metadata?.labels ?? {}).find(
+      ([k, v]) => (k === "app.kubernetes.io/instance" || k === "name") && MongoDbOperatorLabelSet.has(v)
+    )
   );
 
   const podResources = kPods.items.map((kObj) => ({
@@ -79,19 +81,19 @@ const getPods = async (namespace: string, crUIDs: string[]) => {
   };
 };
 
-export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
-  const { k8sResources, operatorNs, crUIDs } = await getCRDsAndCRs();
+export const getMongodbDeployment = async (context: string): Promise<MongodbDeployment> => {
+  const { k8sResources, operatorNs, crUIDs } = await getCRDsAndCRs(context);
 
-  const { operatorPod, podResources } = await getPods(operatorNs, crUIDs);
+  const { operatorPod, podResources } = await getPods(context, operatorNs, crUIDs);
   k8sResources.push(...podResources);
 
-  const kDeployments = await k8sClient.getDeployments(operatorNs);
+  const kDeployments = await k8sClient.getDeployments(context, operatorNs);
   k8sResources.push(...kDeployments.items.map(mapK8SResourceWith));
 
-  const kReplicaSets = await k8sClient.getReplicaSets(operatorNs);
+  const kReplicaSets = await k8sClient.getReplicaSets(context, operatorNs);
   k8sResources.push(...kReplicaSets.items.map(mapK8SResourceWith));
 
-  const kStatefulSets = await k8sClient.getStatefulSets(operatorNs);
+  const kStatefulSets = await k8sClient.getStatefulSets(context, operatorNs);
   k8sResources.push(
     ...kStatefulSets.items.map((kObj) => ({
       ...mapK8SResourceWith(kObj),
@@ -99,7 +101,7 @@ export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
     }))
   );
 
-  const kPVCs = await k8sClient.getPersistentVolumeClaims(operatorNs);
+  const kPVCs = await k8sClient.getPersistentVolumeClaims(context, operatorNs);
   k8sResources.push(
     ...kPVCs.items.map((kObj) => {
       const ownerPod = podResources.find((p) => p.pvcs.includes(kObj.metadata?.name ?? "n/a"));
@@ -114,7 +116,7 @@ export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
     })
   );
 
-  const kPVs = await k8sClient.getPersistentVolumes();
+  const kPVs = await k8sClient.getPersistentVolumes(context);
   k8sResources.push(
     ...kPVs.items.map((kObj) => ({
       ...mapK8SResourceWith(kObj),
@@ -127,6 +129,6 @@ export const getMongodbDeployment = async (): Promise<MongodbDeployment> => {
   );
 
   return {
-    k8sResources: k8sResources,
+    k8sResources,
   };
 };

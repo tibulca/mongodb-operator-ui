@@ -1,20 +1,25 @@
 import axios from "axios";
 
 import { HttpContentType, HttpHeader, HttpMethod, HttpStatusCode } from "../../../core/enums";
-import { MongodbDeploymentUIModel, NodeHttpAction } from "../../../core/models";
+import { Context, MongodbDeploymentUIModel, NodeHttpAction } from "../../../core/models";
 import { Time } from "../../../core/utils";
 
 type errCallback = (err: Error) => void;
 type successCallback<T> = (result: T) => void;
 
 const getAsync = async <T>(url: string): Promise<T> => {
-  const result = await axios.get<T>(url, { timeout: Time.Seconds(5) });
+  const result = await axios.get<T>(url, { timeout: Time.Seconds(10) });
   return result.data;
 };
 
 const deleteAsync = async (url: string): Promise<string> => {
   const result = await fetch(url, { method: HttpMethod.Delete });
   return result.text();
+};
+
+const postAsync = async <T>(url: string, data: string): Promise<T> => {
+  const result = await fetch(url, { method: HttpMethod.Post, body: data });
+  return result.json();
 };
 
 const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) => {
@@ -30,13 +35,17 @@ const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) 
   fetchData();
 };
 
-const getMongodbDeployment = (successCb: successCallback<MongodbDeploymentUIModel>, errCb: errCallback) =>
-  get("/api/deployment", (result: MongodbDeploymentUIModel) => successCb(result), errCb);
+const getMongodbDeployment = (
+  context: string,
+  successCb: successCallback<MongodbDeploymentUIModel>,
+  errCb: errCallback
+) => get(`/api/deployment?context=${context}`, (result: MongodbDeploymentUIModel) => successCb(result), errCb);
 
-const getPodLogs = (namespace: string, pod: string, container: string) =>
-  getAsync<string>(`/api/pods/logs?namespace=${namespace}&pod=${pod}&container=${container}`);
+const getPodLogs = (context: string, namespace: string, pod: string, container: string) =>
+  getAsync<string>(`/api/pods/logs?context=${context}&namespace=${namespace}&pod=${pod}&container=${container}`);
 
-const deletePod = (namespace: string, pod: string) => deleteAsync(`/api/pods?namespace=${namespace}&pod=${pod}`);
+const deletePod = (context: string, namespace: string, pod: string) =>
+  deleteAsync(`/api/pods?context=${context}&namespace=${namespace}&pod=${pod}`);
 
 const executeHttpAction = async (action: NodeHttpAction) => {
   const httpResponse = await axios({
@@ -53,6 +62,9 @@ const executeHttpAction = async (action: NodeHttpAction) => {
   };
 };
 
+const getContexts = (successCb: successCallback<{ contexts: Context[]; currentContext: string }>, errCb: errCallback) =>
+  get("/api/context", (result: { contexts: Context[]; currentContext: string }) => successCb(result), errCb);
+
 export default {
   get,
   getAsync,
@@ -60,4 +72,5 @@ export default {
   getPodLogs,
   deletePod,
   executeHttpAction,
+  getContexts,
 };

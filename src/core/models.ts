@@ -56,3 +56,10 @@ export type K8SResourceUIModel = K8SResourceWithActions & {
 export type MongodbDeploymentUIModel = {
   k8sResources: K8SResourceUIModel[];
 };
+
+export type Context = {
+  cluster: string;
+  user: string;
+  name: string;
+  namespace?: string;
+};

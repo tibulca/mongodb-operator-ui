@@ -52,9 +52,9 @@ const options: VisOptions = {
     width: 1,
     smooth: {
       enabled: true,
-      type: "cubicBezier", //"vertical",
+      type: "horizontal", //"cubicBezier", "vertical"
       forceDirection: "none",
-      roundness: 0.1,
+      roundness: 0.2,
     },
   },
 };

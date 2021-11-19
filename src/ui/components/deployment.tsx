@@ -8,6 +8,7 @@ import Network from "./network";
 import * as NetworkModels from "../models/network";
 import { K8SKind } from "../../core/enums";
 import { DisplaySettings } from "../models/settings";
+import { isOperatorPod } from "../../core/utils";
 
 type DeploymentProps = {
   data: MongodbDeploymentUIModel;
@@ -28,9 +29,6 @@ const ResourceImageMap: Record<string, string> = {
   mongodbopsmanager: "/images/crd-u-256.png",
   mongodbuser: "/images/user-256.png",
 };
-
-const isOperatorPod = (kRes: K8SResource) =>
-  kRes.kind === K8SKind.Pod && kRes.name.includes("operator") && kRes.ownerReference?.kind === K8SKind.ReplicaSet;
 
 const networkDataContainer = () => {
   const nodes: NetworkModels.Node[] = [];
@@ -60,7 +58,9 @@ const networkDataContainer = () => {
       tooltip: string,
       kind: string,
       edgeFromNodes: { uid: string; dashes?: boolean }[],
-      edgeToNodes: { uid: string; dashes?: boolean }[]
+      edgeToNodes: { uid: string; dashes?: boolean }[],
+      x: number,
+      y: number
     ) => {
       const image = ResourceImageMap[kind.toLowerCase()];
       const node = {
@@ -70,6 +70,8 @@ const networkDataContainer = () => {
         group: kind,
         shape: image ? "image" : undefined,
         image,
+        x,
+        y,
       };
       nodes.push(node);
 
@@ -84,7 +86,7 @@ const networkDataContainer = () => {
   };
 };
 
-const buildGraph = (settings: DisplaySettings, deployment: MongodbDeployment) => {
+const buildGraph = (settings: DisplaySettings, deployment: MongodbDeploymentUIModel) => {
   const graph = networkDataContainer();
 
   deployment.k8sResources
@@ -99,7 +101,9 @@ const buildGraph = (settings: DisplaySettings, deployment: MongodbDeployment) =>
           { uid: kRes.ownerReference?.uid ?? "" },
           ...(kRes.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
         ].filter((e) => e.uid),
-        []
+        [],
+        kRes.ui.location.x,
+        kRes.ui.location.y
       );
     });
 

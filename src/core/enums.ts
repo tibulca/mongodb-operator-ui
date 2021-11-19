@@ -24,6 +24,8 @@ export enum K8SKind {
   Deployment = "Deployment",
   ReplicaSet = "ReplicaSet",
   StatefulSet = "StatefulSet",
+  Secret = "Secret",
+  ConfigMap = "ConfigMap",
   CustomResourceDefinition = "CustomResourceDefinition",
   PersistentVolumeClaim = "PersistentVolumeClaim",
   PersistentVolume = "PersistentVolume",

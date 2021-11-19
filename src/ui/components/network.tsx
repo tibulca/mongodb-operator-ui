@@ -10,17 +10,17 @@ import * as NetworkModels from "../models/network";
 const options: VisOptions = {
   layout: {
     //hierarchical: true,
-    hierarchical: {
-      direction: "UD",
-      sortMethod: "directed", // hubsize / directed
-      shakeTowards: "roots", // roots / leaves
-      edgeMinimization: true,
-      parentCentralization: false,
-      blockShifting: false,
-      nodeSpacing: 200,
-      treeSpacing: 175,
-      levelSeparation: 150,
-    },
+    // hierarchical: {
+    //   direction: "UD",
+    //   sortMethod: "directed", // hubsize / directed
+    //   shakeTowards: "roots", // roots / leaves
+    //   edgeMinimization: true,
+    //   parentCentralization: false,
+    //   blockShifting: false,
+    //   nodeSpacing: 200,
+    //   treeSpacing: 175,
+    //   levelSeparation: 150,
+    // },
   },
   interaction: {
     dragNodes: true,

@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import YAML from "yaml";
 
-import { K8SResource, MongodbDeployment, MongodbDeploymentUIModel } from "../../core/models";
+import { MongodbDeploymentUIModel } from "../../core/models";
 import NodeInfoModal from "./node-info-modal";
-import NodeClusterModal from "./node-cluster-modal";
 import Network from "./network";
 import * as NetworkModels from "../models/network";
 import { K8SKind } from "../../core/enums";
@@ -24,6 +23,9 @@ const ResourceImageMap: Record<string, string> = {
   [K8SKind.ReplicaSet.toLowerCase()]: "/images/rs-256.png",
   [K8SKind.PersistentVolume.toLowerCase()]: "/images/pv-256.png",
   [K8SKind.PersistentVolumeClaim.toLowerCase()]: "/images/pvc-256.png",
+  [K8SKind.Service.toLowerCase()]: "/images/svc-256.png",
+  [K8SKind.ConfigMap.toLowerCase()]: "/images/cm-256.png",
+  [K8SKind.Secret.toLowerCase()]: "/images/secret-256.png",
   mongodb: "/images/crd-u-256.png",
   mongodbcommunity: "/images/crd-u-256.png",
   mongodbopsmanager: "/images/crd-u-256.png",
@@ -89,23 +91,21 @@ const networkDataContainer = () => {
 const buildGraph = (settings: DisplaySettings, deployment: MongodbDeploymentUIModel) => {
   const graph = networkDataContainer();
 
-  deployment.k8sResources
-    .filter((r) => !settings.HideResources.includes(r.kind))
-    .forEach((kRes) => {
-      graph.addNode(
-        kRes.uid,
-        kRes.name,
-        `${kRes.kind}: ${kRes.name}${kRes.status ? ` - ${kRes.status}` : ""}`,
-        isOperatorPod(kRes) ? "Operator" : kRes.kind,
-        [
-          { uid: kRes.ownerReference?.uid ?? "" },
-          ...(kRes.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
-        ].filter((e) => e.uid),
-        [],
-        kRes.ui.location.x,
-        kRes.ui.location.y
-      );
-    });
+  deployment.k8sResources.forEach((kRes) => {
+    graph.addNode(
+      kRes.uid,
+      kRes.name,
+      `${kRes.kind}: ${kRes.name}${kRes.status ? ` - ${kRes.status}` : ""}`,
+      isOperatorPod(kRes) ? "Operator" : kRes.kind,
+      [
+        { uid: kRes.ownerReference?.uid ?? "" },
+        ...(kRes.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
+      ].filter((e) => e.uid),
+      [],
+      kRes.ui.location.x,
+      kRes.ui.location.y
+    );
+  });
 
   return graph.data();
 };
@@ -146,6 +146,13 @@ const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
         null,
         2
       ),
+    });
+  }
+
+  if (selectedNode.fullStatus) {
+    sections.push({
+      title: "Status",
+      content: YAML.stringify(selectedNode.fullStatus, null, 2),
     });
   }
 

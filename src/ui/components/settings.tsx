@@ -12,7 +12,7 @@ import {
   Select,
   SelectChangeEvent,
 } from "@mui/material";
-import { DisplaySettings } from "../models/settings";
+import { DisplaySettings, ResourceDisplay } from "../models/settings";
 import { K8SKind, MongoDBKind } from "../../core/enums";
 
 const style = {
@@ -40,20 +40,28 @@ const ResourcesToFilter = [
   K8SKind.CustomResourceDefinition,
   K8SKind.PersistentVolume,
   K8SKind.PersistentVolumeClaim,
+  K8SKind.Service,
+  //K8SKind.ConfigMap,
+  K8SKind.Secret,
   MongoDBKind.MongoDBUser,
 ];
 
 const SettingsModal = (props: SettingsModalProps) => {
-  const showKind = (kind: K8SKind | MongoDBKind) => !props.settings.HideResources.includes(kind);
+  const showKind = (kind: K8SKind | MongoDBKind) => {
+    const display = props.settings.ResourcesMap.get(kind);
+    // todo: do not return only a bool
+    return !display || display === ResourceDisplay.Show;
+  };
 
   const handleShowKindChange = (kind: K8SKind | MongoDBKind) => (event: React.ChangeEvent<HTMLInputElement>) => {
     // todo: deep clone props.settings
     const s = { ...props.settings };
     if (event.target.checked) {
-      s.HideResources = s.HideResources.filter((k) => k != kind);
+      s.Resources[kind] = ResourceDisplay.Show;
     } else {
-      s.HideResources.push(kind);
+      s.Resources[kind] = ResourceDisplay.Hide;
     }
+    s.ResourcesMap = new Map(Object.entries(s.Resources));
     props.onUpdate(s);
   };
 

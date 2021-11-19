@@ -1,23 +1,22 @@
-import { K8SKind, MongoDBKind } from "../../core/enums";
-import { K8SResourceWithActions, MongodbDeploymentUIModel } from "../../core/models";
-import { balanceSortedArray, isOperatorPod } from "../../core/utils";
-import { getMongodbDeploymentWithActions } from "./deploymentActions";
+import { K8SKind, MongoDBKind } from "../../../core/enums";
+import { K8SResourceWithActions, MongodbDeploymentUIModel, MongodbDeploymentWithActions } from "../../../core/models";
+import { balanceSortedArray, groupBy, isOperatorPod } from "../../../core/utils";
+import { DisplaySettings, ResourceDisplay } from "../../models/settings";
 
-// todo: move to UI services
-
-const OperatorSortWeight = 1;
+const OperatorSortWeight = 10000;
 
 type Node = {
   res: K8SResourceWithActions;
 
   x: number;
   y: number;
-  w: number;
+  weight: number;
   level: number;
 
   parent: Node | undefined;
   children: Node[];
   dependsOnNodes: Node[];
+  dependentNodes: Node[];
 };
 
 type Graph = {
@@ -40,11 +39,21 @@ const updateNodeLevelRec = (n: Node) => {
 
 const updateNodeWeightRec = (n: Node) => {
   // n.w = 1 + n.children.reduce((acc, cn) => acc + updateNodeWeightRec(cn), 0) + (isOperatorPod(n.res) ? 100 : 0);
-  n.w = Math.max(
-    isOperatorPod(n.res) ? OperatorSortWeight : 1,
-    n.children.map(updateNodeWeightRec).reduce((acc, w) => acc + w, 0)
+
+  const childrenByLevel = groupBy(n.children, (c: Node) => String(c.level));
+
+  n.weight = Math.max(
+    isOperatorPod(n.res) ? OperatorSortWeight + 1 : 1,
+    ...Array.from(childrenByLevel.values()).map((childrenGroup) => {
+      const w = childrenGroup.map(updateNodeWeightRec).reduce((acc, w) => acc + w, 0);
+      if (w > 9 && w < 100 && n.parent) {
+        console.log(w, n);
+      }
+      return w;
+    })
   );
-  return n.w;
+
+  return n.weight;
 };
 
 const adjustNodeLevelRec = (n: Node, parentOrDepLevel: number) => {
@@ -54,16 +63,15 @@ const adjustNodeLevelRec = (n: Node, parentOrDepLevel: number) => {
 
 const updateLevelsAndWeight = (g: Graph) => {
   const nodes = Array.from(g.nodes.values());
-  nodes
-    .filter((n) => !n.parent)
-    .forEach((n) => {
-      updateNodeLevelRec(n);
-      updateNodeWeightRec(n);
-    });
+  const parentNodes = nodes.filter((n) => !n.parent);
+  parentNodes.forEach(updateNodeLevelRec);
 
   nodes
+    // .filter((n) => n.dependsOnNodes.length && n.res.kind !== K8SKind.Service)
     .filter((n) => n.dependsOnNodes.length)
     .forEach((n) => adjustNodeLevelRec(n, Math.max(...n.dependsOnNodes.map((dn) => dn.level))));
+
+  parentNodes.forEach(updateNodeWeightRec);
 
   nodes.forEach((n) => g.levelNodes.set(n.level, [...(g.levelNodes.get(n.level) ?? []), n]));
 };
@@ -76,9 +84,10 @@ const updateCoordinates = (
   parentOffsetX: number
 ) => {
   n.y = n.level * padding.y;
+  const nodeWeight = n.weight >= OperatorSortWeight ? n.weight - OperatorSortWeight + 1 : n.weight;
 
   const xStart = Math.max(xCoordByLevel[n.level] ?? 0, parentOffsetX);
-  const xEnd = xStart + n.w * padding.x;
+  const xEnd = xStart + nodeWeight * padding.x;
   n.x = xStart + (xEnd - xStart) / 2;
   xCoordByLevel[n.level] = xEnd;
 
@@ -94,14 +103,25 @@ const getPadding = (graph: Graph) => {
   };
 };
 
-export const getMongodbDeploymentNetwork = async (context: string): Promise<MongodbDeploymentUIModel> => {
-  const deployment = await getMongodbDeploymentWithActions(context);
-
+export const getMongodbDeploymentNetwork = (
+  deployment: MongodbDeploymentWithActions,
+  settings: DisplaySettings
+): MongodbDeploymentUIModel => {
   const graph: Graph = {
     nodes: new Map(
       deployment.k8sResources.map((res) => [
         res.uid,
-        { res, x: 0, y: 0, w: 0, level: 0, parent: undefined, children: [], dependsOnNodes: [] } as Node,
+        {
+          res,
+          x: 0,
+          y: 0,
+          weight: 0,
+          level: 0,
+          parent: undefined,
+          children: [],
+          dependsOnNodes: [],
+          dependentNodes: [],
+        } as Node,
       ])
     ),
     levelNodes: new Map(),
@@ -114,12 +134,36 @@ export const getMongodbDeploymentNetwork = async (context: string): Promise<Mong
       n.parent = graph.nodes.get(ownerUid);
       n.parent?.children.push(n);
     }
-    n.res.dependsOnUIDs?.forEach((dn) => n.dependsOnNodes.push(graph.nodes.get(dn) as Node));
+    n.res.dependsOnUIDs?.forEach((dn) => {
+      const dependsOnNode = graph.nodes.get(dn) as Node;
+      n.dependsOnNodes.push(dependsOnNode);
+      dependsOnNode.dependentNodes.push(n);
+    });
+  });
+
+  Array.from(graph.nodes.values()).forEach((n) => {
+    const resDisplay = settings.ResourcesMap.get(n.res.kind);
+    if (
+      resDisplay === ResourceDisplay.Hide ||
+      (resDisplay === ResourceDisplay.ShowOnlyIfReferenced &&
+        !n.parent &&
+        !n.dependsOnNodes.length &&
+        !n.dependentNodes.length)
+    ) {
+      if (n.parent) {
+        n.parent.children = n.parent.children.filter((c) => c.res.uid !== n.res.uid);
+      }
+      n.children.forEach((c) => {
+        c.parent = undefined;
+      });
+      n.dependentNodes.forEach((dn) => dn.dependsOnNodes.filter((d) => d.res.uid === n.res.uid));
+      graph.nodes.delete(n.res.uid);
+    }
   });
 
   updateLevelsAndWeight(graph);
 
-  graph.levelNodes.set(0, balanceSortedArray((graph.levelNodes.get(0) ?? []).sort((n1, n2) => n1.w - n2.w)));
+  graph.levelNodes.set(0, balanceSortedArray((graph.levelNodes.get(0) ?? []).sort((n1, n2) => n1.weight - n2.weight)));
 
   const padding = getPadding(graph);
   //console.log(graph.levelNodes.size, maxNodesPerLevel, padding);
@@ -133,9 +177,12 @@ export const getMongodbDeploymentNetwork = async (context: string): Promise<Mong
   return {
     k8sResources: Array.from(graph.nodes.values()).map((n) => ({
       ...n.res,
-      //name: `l${n.level}, w${n.w}, {${n.x},${n.y}}`,
+      //name: `l${n.level}, w${n.weight}, {${n.x},${n.y}}`,
       ui: {
-        location: { x: n.x, y: n.y },
+        location: {
+          x: Math.round(n.x),
+          y: n.y,
+        },
       },
     })),
   };

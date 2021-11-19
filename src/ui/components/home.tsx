@@ -1,9 +1,9 @@
 import type { NextPage } from "next";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, createContext } from "react";
 import Deployment from "./deployment";
 import SettingsModal from "./settings";
 import apiClient from "../services/clients/api";
-import { Context, MongodbDeploymentUIModel } from "../../core/models";
+import { Context, MongodbDeploymentUIModel, MongodbDeploymentWithActions } from "../../core/models";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 //import Container from "@mui/material/Container";
@@ -26,16 +26,17 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import MenuIcon from "@mui/icons-material/Menu";
 import CssBaseline from "@mui/material/CssBaseline";
 import Head from "next/head";
-import { DisplaySettings } from "../models/settings";
+import { DisplaySettings, ResourceDisplay } from "../models/settings";
 import AppHeader from "./app-header";
 import localStorage from "../services/localStorage";
 
 //import "../src/ui/styles/globals.css";
 import theme from "../theme";
 import styles from "../styles/Home.module.css";
-import { K8SKind } from "../../core/enums";
+import { K8SKind, MongoDBKind } from "../../core/enums";
+import { getMongodbDeploymentNetwork } from "../services/network/deploymentNetwork";
 
-const ColorModeContext = React.createContext({ toggleColorMode: () => {} });
+const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 const drawerWidth = 240;
 
@@ -88,42 +89,73 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
   }),
 }));
 
-const localStorageSettings = () =>
-  localStorage.getItem<DisplaySettings>("settings") ?? {
-    HideResources: [K8SKind.PersistentVolume, K8SKind.PersistentVolumeClaim],
+const localStorageSettings = (): DisplaySettings => {
+  const SettingsVersion = 1;
+  const settings = localStorage.getItem<DisplaySettings>("settings");
+  if (settings && settings.SettingsVersion === SettingsVersion) {
+    settings.ResourcesMap = new Map(Object.entries(settings.Resources));
+    return settings;
+  }
+
+  const defaultRes = {
+    [K8SKind.PersistentVolume]: ResourceDisplay.Hide,
+    [K8SKind.PersistentVolumeClaim]: ResourceDisplay.Hide,
+    [K8SKind.Service]: ResourceDisplay.Hide,
+    [K8SKind.Secret]: ResourceDisplay.Hide,
+    [K8SKind.ConfigMap]: ResourceDisplay.Hide,
+    [K8SKind.CustomResourceDefinition]: ResourceDisplay.ShowOnlyIfReferenced,
+    [MongoDBKind.MongoDBUser]: ResourceDisplay.ShowOnlyIfReferenced,
+  };
+  const defaultSettings = {
+    SettingsVersion,
+    Resources: defaultRes,
+    ResourcesMap: new Map(Object.entries(defaultRes)),
     Context: { contexts: [], currentContext: "" },
   };
 
+  return defaultSettings;
+};
+
 const Home: NextPage = () => {
-  const [settings, setSettings] = React.useState<DisplaySettings>(localStorageSettings());
+  const [settings, setSettings] = useState<DisplaySettings>(localStorageSettings());
+
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [themeMode, setThemeMode] = useState<"light" | "dark">("dark");
+  const colorMode = useMemo(
+    () => ({ toggleColorMode: () => setThemeMode((prevMode) => (prevMode === "light" ? "dark" : "light")) }),
+    []
+  );
+  const theme = useMemo(() => createTheme({ palette: { mode: themeMode } }), [themeMode]);
+
+  const [rawDeployment, setRawDeployment] = useState<MongodbDeploymentWithActions | undefined>();
+  const [deployment, setDeployment] = useState<MongodbDeploymentUIModel | undefined>();
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleDrawerOpen = () => setDrawerOpen(true);
+  const handleDrawerClose = () => setDrawerOpen(false);
+
   const handleChangeSettings = (settings: DisplaySettings) => {
     setSettings(settings);
     if (localStorageSettings().Context.currentContext !== settings.Context.currentContext) {
-      apiClient.getMongodbDeployment(settings.Context.currentContext, setDeployment, (err) => {
+      apiClient.getMongodbDeployment(settings.Context.currentContext, handleSetDeployment, (err) => {
         console.log(err);
         /* display err */
       });
+    } else if (rawDeployment) {
+      setDeployment(getMongodbDeploymentNetwork(rawDeployment, settings));
     }
     localStorage.setItem("settings", settings);
   };
 
-  const [showSettings, setShowSettings] = React.useState<boolean>(false);
-  const [themeMode, setThemeMode] = React.useState<"light" | "dark">("dark");
-  const colorMode = React.useMemo(
-    () => ({ toggleColorMode: () => setThemeMode((prevMode) => (prevMode === "light" ? "dark" : "light")) }),
-    []
-  );
-  const theme = React.useMemo(() => createTheme({ palette: { mode: themeMode } }), [themeMode]);
-
-  const [deployment, setDeployment] = useState<MongodbDeploymentUIModel | undefined>();
-
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const handleDrawerOpen = () => setDrawerOpen(true);
-  const handleDrawerClose = () => setDrawerOpen(false);
+  const handleSetDeployment = (deployment: MongodbDeploymentWithActions) => {
+    setRawDeployment(deployment);
+    setDeployment(getMongodbDeploymentNetwork(deployment, settings));
+  };
 
   useEffect(() => {
     if (settings.Context.currentContext) {
-      apiClient.getMongodbDeployment(settings.Context.currentContext, setDeployment, (err) => {
+      apiClient.getMongodbDeployment(settings.Context.currentContext, handleSetDeployment, (err) => {
         console.log(err);
         /* display err */
       });
@@ -131,7 +163,7 @@ const Home: NextPage = () => {
       apiClient.getContexts(
         (c) => {
           setSettings({ ...settings, Context: c });
-          apiClient.getMongodbDeployment(c.currentContext, setDeployment, (err) => {
+          apiClient.getMongodbDeployment(c.currentContext, handleSetDeployment, (err) => {
             console.log(err);
             /* display err */
           });

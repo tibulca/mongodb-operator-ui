@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { HttpContentType, HttpHeader, HttpMethod, HttpStatusCode } from "../../../core/enums";
-import { Context, MongodbDeploymentUIModel, NodeHttpAction } from "../../../core/models";
+import { Context, MongodbDeploymentUIModel, MongodbDeploymentWithActions, NodeHttpAction } from "../../../core/models";
 import { Time } from "../../../core/utils";
 
 type errCallback = (err: Error) => void;
@@ -37,9 +37,9 @@ const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) 
 
 const getMongodbDeployment = (
   context: string,
-  successCb: successCallback<MongodbDeploymentUIModel>,
+  successCb: successCallback<MongodbDeploymentWithActions>,
   errCb: errCallback
-) => get(`/api/deployment?context=${context}`, (result: MongodbDeploymentUIModel) => successCb(result), errCb);
+) => get(`/api/deployment?context=${context}`, (result: MongodbDeploymentWithActions) => successCb(result), errCb);
 
 const getPodLogs = (context: string, namespace: string, pod: string, container: string) =>
   getAsync<string>(`/api/pods/logs?context=${context}&namespace=${namespace}&pod=${pod}&container=${container}`);

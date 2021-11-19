@@ -25,6 +25,7 @@ export enum K8SKind {
   ReplicaSet = "ReplicaSet",
   StatefulSet = "StatefulSet",
   Secret = "Secret",
+  Service = "Service",
   ConfigMap = "ConfigMap",
   CustomResourceDefinition = "CustomResourceDefinition",
   PersistentVolumeClaim = "PersistentVolumeClaim",
@@ -38,6 +39,7 @@ export enum MongoDBKind {
   MongoDBMultiCluster = "MongoDBMulti",
   MongoDBCommunity = "MongoDBCommunity",
   MongoDBUser = "MongoDBUser",
+  MongoDBOpsManager = "MongoDBOpsManager",
 }
 export const MongoDBKindSet = new Set(Object.values(MongoDBKind));
 

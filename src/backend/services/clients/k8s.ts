@@ -41,7 +41,7 @@ const getContexts = (): { contexts: Context[]; currentContext: string } => ({
 const getPods = async (context: string, namespace: string) =>
   clients(context)
     .k8sApi.listNamespacedPod(namespace)
-    .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.Pod })) }));
+    .then((res) => ({ ...res.body, items: res.body.items.map(ensureKindIsSet(K8SKind.Pod)) }));
 
 const deletePod = async (context: string, namespace: string, podName: string) =>
   clients(context)
@@ -94,23 +94,54 @@ const execCmdInPod = (
   });
 };
 
+const ensureKindIsSet =
+  (defaultKind: K8SKind) =>
+  <T extends { kind?: string }>(i: T) => ({
+    ...i,
+    kind: i.kind ?? defaultKind,
+  });
+
 // todo: set "kind" if not found in the response
 const getDeployments = async (context: string, namespace: string) =>
   clients(context)
     .k8sAppsApi.listNamespacedDeployment(namespace)
-    .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.Deployment })) }));
+    .then((res) => ({ ...res.body, items: res.body.items.map(ensureKindIsSet(K8SKind.Deployment)) }));
 
 const getReplicaSets = async (context: string, namespace: string) =>
   clients(context)
     .k8sAppsApi.listNamespacedReplicaSet(namespace)
-    .then((res) => ({ ...res.body, items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.ReplicaSet })) }));
+    .then((res) => ({ ...res.body, items: res.body.items.map(ensureKindIsSet(K8SKind.ReplicaSet)) }));
 
 const getStatefulSets = async (context: string, namespace: string) =>
   clients(context)
     .k8sAppsApi.listNamespacedStatefulSet(namespace)
     .then((res) => ({
       ...res.body,
-      items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.StatefulSet })),
+      items: res.body.items.map(ensureKindIsSet(K8SKind.StatefulSet)),
+    }));
+
+const getServices = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sApi.listNamespacedService(namespace)
+    .then((res) => ({
+      ...res.body,
+      items: res.body.items.map(ensureKindIsSet(K8SKind.Service)),
+    }));
+
+const getConfigMaps = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sApi.listNamespacedConfigMap(namespace)
+    .then((res) => ({
+      ...res.body,
+      items: res.body.items.map(ensureKindIsSet(K8SKind.ConfigMap)),
+    }));
+
+const getSecrets = async (context: string, namespace: string) =>
+  clients(context)
+    .k8sApi.listNamespacedSecret(namespace)
+    .then((res) => ({
+      ...res.body,
+      items: res.body.items.map(ensureKindIsSet(K8SKind.Secret)),
     }));
 
 const getCRDs = async (context: string, groups: Set<string>) =>
@@ -134,7 +165,7 @@ const getPersistentVolumeClaims = async (context: string, namespace: string) =>
     .k8sApi.listNamespacedPersistentVolumeClaim(namespace)
     .then((res) => ({
       ...res.body,
-      items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolumeClaim })),
+      items: res.body.items.map(ensureKindIsSet(K8SKind.PersistentVolumeClaim)),
     }));
 
 const getPersistentVolumes = async (context: string) =>
@@ -142,7 +173,7 @@ const getPersistentVolumes = async (context: string) =>
     .k8sApi.listPersistentVolume()
     .then((res) => ({
       ...res.body,
-      items: res.body.items.map((i) => ({ ...i, kind: i.kind ?? K8SKind.PersistentVolume })),
+      items: res.body.items.map(ensureKindIsSet(K8SKind.PersistentVolume)),
     }));
 
 export default {
@@ -158,4 +189,7 @@ export default {
   execCmdInPod,
   getPersistentVolumeClaims,
   getPersistentVolumes,
+  getServices,
+  getSecrets,
+  getConfigMaps,
 };

@@ -20,8 +20,10 @@ export type K8SResource = {
   };
   dependsOnUIDs?: string[];
   status?: string;
+  fullStatus: any;
   spec?: any;
   childs?: string[]; // e.g. containers
+  labels?: { [key: string]: string };
 };
 
 export type MongodbDeployment = {

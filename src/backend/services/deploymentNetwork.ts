@@ -68,15 +68,30 @@ const updateLevelsAndWeight = (g: Graph) => {
   nodes.forEach((n) => g.levelNodes.set(n.level, [...(g.levelNodes.get(n.level) ?? []), n]));
 };
 
-const updateCoordinates = (g: Graph, n: Node, xCoordByLevel: number[], padding: { x: number; y: number }) => {
+const updateCoordinates = (
+  g: Graph,
+  n: Node,
+  xCoordByLevel: number[],
+  padding: { x: number; y: number },
+  parentOffsetX: number
+) => {
   n.y = n.level * padding.y;
 
-  const xStart = xCoordByLevel[n.level] ?? 0;
+  const xStart = Math.max(xCoordByLevel[n.level] ?? 0, parentOffsetX);
   const xEnd = xStart + n.w * padding.x;
   n.x = xStart + (xEnd - xStart) / 2;
   xCoordByLevel[n.level] = xEnd;
 
-  n.children.forEach((cn) => updateCoordinates(g, cn, xCoordByLevel, padding));
+  n.children.forEach((cn) => updateCoordinates(g, cn, xCoordByLevel, padding, xStart));
+};
+
+const getPadding = (graph: Graph) => {
+  const paddingY = 150;
+  const maxNodesPerLevel = Math.max(...Array.from(graph.levelNodes.values()).map((ln) => ln.length));
+  return {
+    x: Math.max(paddingY * (graph.levelNodes.size / maxNodesPerLevel) * 2, 140),
+    y: paddingY,
+  };
 };
 
 export const getMongodbDeploymentNetwork = async (context: string): Promise<MongodbDeploymentUIModel> => {
@@ -106,19 +121,13 @@ export const getMongodbDeploymentNetwork = async (context: string): Promise<Mong
 
   graph.levelNodes.set(0, balanceSortedArray((graph.levelNodes.get(0) ?? []).sort((n1, n2) => n1.w - n2.w)));
 
-  const paddingY = 150;
-
-  const maxNodesPerLevel = Math.max(...Array.from(graph.levelNodes.values()).map((ln) => ln.length));
-  const padding = {
-    x: Math.max(paddingY * (graph.levelNodes.size / maxNodesPerLevel) * 2, 140),
-    y: paddingY,
-  };
-  console.log(graph.levelNodes.size, maxNodesPerLevel, padding);
+  const padding = getPadding(graph);
+  //console.log(graph.levelNodes.size, maxNodesPerLevel, padding);
 
   const xCoordByLevel: number[] = [];
   graph.levelNodes.forEach((levelNodes) => {
     const levelNodesWithoutParent = levelNodes.filter((n) => !n.parent);
-    levelNodesWithoutParent.forEach((n) => updateCoordinates(graph, n, xCoordByLevel, padding));
+    levelNodesWithoutParent.forEach((n) => updateCoordinates(graph, n, xCoordByLevel, padding, 0));
   });
 
   return {

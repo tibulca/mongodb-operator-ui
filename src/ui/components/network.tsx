@@ -85,8 +85,6 @@ export type NetworkProps = {
 const Network = (props: NetworkProps) => {
   const [network, setNetwork] = useState<VisNetwork | null>(null);
 
-  console.log("-----", props.layout);
-
   return (
     <NetworkGraph
       key={v4()}

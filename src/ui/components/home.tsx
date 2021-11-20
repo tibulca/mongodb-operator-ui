@@ -24,6 +24,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SettingsIcon from "@mui/icons-material/Settings";
 import MenuIcon from "@mui/icons-material/Menu";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import CssBaseline from "@mui/material/CssBaseline";
 import Head from "next/head";
 import { DisplaySettings, ResourceDisplay } from "../models/settings";
@@ -117,6 +118,8 @@ const localStorageSettings = (): DisplaySettings => {
 };
 
 const Home: NextPage = () => {
+  const [lastRefreshRequest, setLastRefreshRequest] = useState(Date.now());
+  const [refreshInProgress, setRefreshInProgress] = useState(false);
   const [settings, setSettings] = useState<DisplaySettings>(localStorageSettings());
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
@@ -138,10 +141,7 @@ const Home: NextPage = () => {
   const handleChangeSettings = (settings: DisplaySettings) => {
     setSettings(settings);
     if (localStorageSettings().Context.currentContext !== settings.Context.currentContext) {
-      apiClient.getMongodbDeployment(settings.Context.currentContext, handleSetDeployment, (err) => {
-        console.log(err);
-        /* display err */
-      });
+      setLastRefreshRequest(Date.now());
     } else if (rawDeployment) {
       setDeployment(getMongodbDeploymentNetwork(rawDeployment, settings));
     }
@@ -149,14 +149,17 @@ const Home: NextPage = () => {
   };
 
   const handleSetDeployment = (deployment: MongodbDeploymentWithActions) => {
+    setRefreshInProgress(false);
     setRawDeployment(deployment);
     setDeployment(getMongodbDeploymentNetwork(deployment, settings));
   };
 
   useEffect(() => {
+    setRefreshInProgress(true);
     if (settings.Context.currentContext) {
       apiClient.getMongodbDeployment(settings.Context.currentContext, handleSetDeployment, (err) => {
         console.log(err);
+        setRefreshInProgress(false);
         /* display err */
       });
     } else {
@@ -165,6 +168,7 @@ const Home: NextPage = () => {
           setSettings({ ...settings, Context: c });
           apiClient.getMongodbDeployment(c.currentContext, handleSetDeployment, (err) => {
             console.log(err);
+            setRefreshInProgress(false);
             /* display err */
           });
         },
@@ -174,7 +178,7 @@ const Home: NextPage = () => {
         }
       );
     }
-  }, []);
+  }, [lastRefreshRequest]);
 
   return (
     //<Container maxWidth="xl" style={{ height: "100%" }}>
@@ -203,6 +207,11 @@ const Home: NextPage = () => {
               <Typography variant="h5" noWrap component="div">
                 MongoDB Operator Dashboard
               </Typography>
+              {(!deployment || refreshInProgress) && (
+                <Box sx={{ marginLeft: "30px" }}>
+                  <CircularProgress />
+                </Box>
+              )}
             </Toolbar>
           </AppHeader>
 
@@ -214,6 +223,12 @@ const Home: NextPage = () => {
             </DrawerHeader>
             <Divider />
             <List>
+              <ListItem button onClick={() => setLastRefreshRequest(Date.now())}>
+                <ListItemIcon>
+                  <RefreshIcon />
+                </ListItemIcon>
+                <ListItemText primary={"Refresh"} />
+              </ListItem>
               <ListItem button onClick={colorMode.toggleColorMode}>
                 <ListItemIcon>{theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}</ListItemIcon>
                 <ListItemText primary={"Theme"} />
@@ -245,11 +260,6 @@ const Home: NextPage = () => {
           <Box role="main" component="main" sx={{ flexGrow: 1, p: 3 }}>
             <DrawerHeader />
             {deployment && <Deployment data={deployment} settings={settings} />}
-            {!deployment && (
-              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <CircularProgress />
-              </Box>
-            )}
           </Box>
 
           <SettingsModal

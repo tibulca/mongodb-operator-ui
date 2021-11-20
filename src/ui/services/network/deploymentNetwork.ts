@@ -103,6 +103,42 @@ const getPadding = (graph: Graph) => {
   };
 };
 
+const applyDisplaySettings = (settings: DisplaySettings, graph: Graph) =>
+  Array.from(graph.nodes.values()).forEach((n) => {
+    const resDisplay = settings.ResourcesMap.get(n.res.kind);
+    if (
+      resDisplay === ResourceDisplay.Hide ||
+      (resDisplay === ResourceDisplay.ShowOnlyIfReferenced &&
+        !n.parent &&
+        !n.children.length &&
+        !n.dependsOnNodes.length &&
+        !n.dependentNodes.length)
+    ) {
+      if (n.parent) {
+        n.parent.children = n.parent.children.filter((c) => c.res.uid !== n.res.uid);
+      }
+      n.children.forEach((c) => {
+        c.parent = undefined;
+      });
+      n.dependentNodes.forEach((dn) => dn.dependsOnNodes.filter((d) => d.res.uid === n.res.uid));
+      graph.nodes.delete(n.res.uid);
+    }
+  });
+
+const addNodesRelation = (graph: Graph) =>
+  graph.nodes.forEach((n) => {
+    const ownerUid = n.res.ownerReference?.uid;
+    if (ownerUid) {
+      n.parent = graph.nodes.get(ownerUid);
+      n.parent?.children.push(n);
+    }
+    n.res.dependsOnUIDs?.forEach((dn) => {
+      const dependsOnNode = graph.nodes.get(dn) as Node;
+      n.dependsOnNodes.push(dependsOnNode);
+      dependsOnNode.dependentNodes.push(n);
+    });
+  });
+
 export const getMongodbDeploymentNetwork = (
   deployment: MongodbDeploymentWithActions,
   settings: DisplaySettings
@@ -127,39 +163,9 @@ export const getMongodbDeploymentNetwork = (
     levelNodes: new Map(),
   };
 
-  // set relations with other nodes
-  graph.nodes.forEach((n) => {
-    const ownerUid = n.res.ownerReference?.uid;
-    if (ownerUid) {
-      n.parent = graph.nodes.get(ownerUid);
-      n.parent?.children.push(n);
-    }
-    n.res.dependsOnUIDs?.forEach((dn) => {
-      const dependsOnNode = graph.nodes.get(dn) as Node;
-      n.dependsOnNodes.push(dependsOnNode);
-      dependsOnNode.dependentNodes.push(n);
-    });
-  });
+  addNodesRelation(graph);
 
-  Array.from(graph.nodes.values()).forEach((n) => {
-    const resDisplay = settings.ResourcesMap.get(n.res.kind);
-    if (
-      resDisplay === ResourceDisplay.Hide ||
-      (resDisplay === ResourceDisplay.ShowOnlyIfReferenced &&
-        !n.parent &&
-        !n.dependsOnNodes.length &&
-        !n.dependentNodes.length)
-    ) {
-      if (n.parent) {
-        n.parent.children = n.parent.children.filter((c) => c.res.uid !== n.res.uid);
-      }
-      n.children.forEach((c) => {
-        c.parent = undefined;
-      });
-      n.dependentNodes.forEach((dn) => dn.dependsOnNodes.filter((d) => d.res.uid === n.res.uid));
-      graph.nodes.delete(n.res.uid);
-    }
-  });
+  applyDisplaySettings(settings, graph);
 
   updateLevelsAndWeight(graph);
 
@@ -179,10 +185,7 @@ export const getMongodbDeploymentNetwork = (
       ...n.res,
       //name: `l${n.level}, w${n.weight}, {${n.x},${n.y}}`,
       ui: {
-        location: {
-          x: Math.round(n.x),
-          y: n.y,
-        },
+        location: { x: Math.round(n.x), y: n.y },
       },
     })),
   };

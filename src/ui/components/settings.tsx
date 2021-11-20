@@ -5,12 +5,14 @@ import {
   Stack,
   FormControl,
   FormGroup,
+  FormLabel,
   FormControlLabel,
-  Checkbox,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
+  RadioGroup,
+  Radio,
 } from "@mui/material";
 import { DisplaySettings, ResourceDisplay } from "../models/settings";
 import { K8SKind, MongoDBKind } from "../../core/enums";
@@ -25,7 +27,15 @@ const style = {
   border: "2px solid #000",
   boxShadow: 24,
   p: 4,
-  height: "90%",
+  height: "80%",
+};
+
+// todo: move to i18n
+const ResourceDisplayLabels = {
+  [ResourceDisplay.Show]: "always",
+  [ResourceDisplay.ShowGrouped]: "grouped",
+  [ResourceDisplay.ShowOnlyIfReferenced]: "if referenced",
+  [ResourceDisplay.Hide]: "hide",
 };
 
 type SettingsModalProps = {
@@ -46,21 +56,15 @@ const ResourcesToFilter = [
   MongoDBKind.MongoDBUser,
 ];
 
+const ResourceDisplayValues = Object.values(ResourceDisplay);
+
 const SettingsModal = (props: SettingsModalProps) => {
-  const showKind = (kind: K8SKind | MongoDBKind) => {
-    const display = props.settings.ResourcesMap.get(kind);
-    // todo: do not return only a bool
-    return !display || display === ResourceDisplay.Show;
-  };
+  const showKind = (kind: K8SKind | MongoDBKind) => props.settings.ResourcesMap.get(kind);
 
   const handleShowKindChange = (kind: K8SKind | MongoDBKind) => (event: React.ChangeEvent<HTMLInputElement>) => {
     // todo: deep clone props.settings
     const s = { ...props.settings };
-    if (event.target.checked) {
-      s.Resources[kind] = ResourceDisplay.Show;
-    } else {
-      s.Resources[kind] = ResourceDisplay.Hide;
-    }
+    s.Resources[kind] = event.target.value as ResourceDisplay;
     s.ResourcesMap = new Map(Object.entries(s.Resources));
     props.onUpdate(s);
   };
@@ -93,7 +97,7 @@ const SettingsModal = (props: SettingsModalProps) => {
               labelId="demo-simple-select-label"
               id="demo-simple-select"
               value={props.settings.Context.currentContext}
-              label="Age"
+              label="Context"
               onChange={handleContextChange}
             >
               {props.settings.Context.contexts.map((c) => (
@@ -103,19 +107,29 @@ const SettingsModal = (props: SettingsModalProps) => {
               ))}
             </Select>
           </FormControl>
-          <h3>Show</h3>
+          <h3>Resources</h3>
           <FormGroup>
             {ResourcesToFilter.map((k) => (
-              <FormControlLabel
-                key={k}
-                control={
-                  <Checkbox
-                    checked={showKind(k as K8SKind | MongoDBKind)}
-                    onChange={handleShowKindChange(k as K8SKind | MongoDBKind)}
-                  />
-                }
-                label={k}
-              />
+              <FormControl key={k} component="fieldset" sx={{ "& .MuiFormGroup-root": { paddingLeft: "30px" } }}>
+                <FormLabel component="legend">{k}</FormLabel>
+                <RadioGroup
+                  row
+                  aria-label="show"
+                  name={`row-radio-buttons-group-${k}`}
+                  value={showKind(k as K8SKind | MongoDBKind)}
+                  onChange={handleShowKindChange(k as K8SKind | MongoDBKind)}
+                >
+                  {ResourceDisplayValues.map((v) => (
+                    <FormControlLabel
+                      key={v}
+                      value={v}
+                      control={<Radio size="small" />}
+                      label={ResourceDisplayLabels[v]}
+                      sx={{ "& .MuiFormControlLabel-label": { fontSize: "smaller" } }}
+                    />
+                  ))}
+                </RadioGroup>
+              </FormControl>
             ))}
           </FormGroup>
         </Typography>

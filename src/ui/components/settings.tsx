@@ -14,7 +14,8 @@ import {
   RadioGroup,
   Radio,
 } from "@mui/material";
-import { DisplaySettings, ResourceDisplay } from "../models/settings";
+import { DisplaySettings } from "../ui-models";
+import { NetworkLayout, ResourceVisibility } from "../ui-enums";
 import { K8SKind, MongoDBKind } from "../../core/enums";
 
 const style = {
@@ -27,15 +28,15 @@ const style = {
   border: "2px solid #000",
   boxShadow: 24,
   p: 4,
-  height: "80%",
+  height: "85%",
 };
 
 // todo: move to i18n
-const ResourceDisplayLabels = {
-  [ResourceDisplay.Show]: "always",
-  [ResourceDisplay.ShowGrouped]: "grouped",
-  [ResourceDisplay.ShowOnlyIfReferenced]: "if referenced",
-  [ResourceDisplay.Hide]: "hide",
+const aResourceVisibilityLabels = {
+  [ResourceVisibility.Show]: "always",
+  [ResourceVisibility.ShowGrouped]: "grouped",
+  [ResourceVisibility.ShowOnlyIfReferenced]: "if referenced",
+  [ResourceVisibility.Hide]: "hide",
 };
 
 type SettingsModalProps = {
@@ -56,15 +57,16 @@ const ResourcesToFilter = [
   MongoDBKind.MongoDBUser,
 ];
 
-const ResourceDisplayValues = Object.values(ResourceDisplay);
+const ResourceVisibilityValues = Object.values(ResourceVisibility);
+const NetworkLayoutValues = Object.values(NetworkLayout);
 
 const SettingsModal = (props: SettingsModalProps) => {
   const showKind = (kind: K8SKind | MongoDBKind) => props.settings.ResourcesMap.get(kind);
 
-  const handleShowKindChange = (kind: K8SKind | MongoDBKind) => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVisibilityChange = (kind: K8SKind | MongoDBKind) => (event: React.ChangeEvent<HTMLInputElement>) => {
     // todo: deep clone props.settings
     const s = { ...props.settings };
-    s.Resources[kind] = event.target.value as ResourceDisplay;
+    s.Resources[kind] = event.target.value as ResourceVisibility;
     s.ResourcesMap = new Map(Object.entries(s.Resources));
     props.onUpdate(s);
   };
@@ -76,6 +78,12 @@ const SettingsModal = (props: SettingsModalProps) => {
         ...props.settings.Context,
         currentContext: event.target.value as string,
       },
+    });
+
+  const handleLayoutChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    props.onUpdate({
+      ...props.settings,
+      Layout: event.target.value as NetworkLayout,
     });
 
   return (
@@ -107,6 +115,26 @@ const SettingsModal = (props: SettingsModalProps) => {
               ))}
             </Select>
           </FormControl>
+          <h3>Layout</h3>
+          <FormControl component="fieldset" sx={{ "& .MuiFormGroup-root": { paddingLeft: "30px" } }}>
+            <RadioGroup
+              row
+              aria-label="show"
+              name={`row-radio-buttons-group-${props.settings.Layout}`}
+              value={props.settings.Layout}
+              onChange={handleLayoutChange}
+            >
+              {NetworkLayoutValues.map((v) => (
+                <FormControlLabel
+                  key={v}
+                  value={v}
+                  control={<Radio size="small" />}
+                  label={v}
+                  sx={{ "& .MuiFormControlLabel-label": { fontSize: "smaller" } }}
+                />
+              ))}
+            </RadioGroup>
+          </FormControl>
           <h3>Resources</h3>
           <FormGroup>
             {ResourcesToFilter.map((k) => (
@@ -117,14 +145,14 @@ const SettingsModal = (props: SettingsModalProps) => {
                   aria-label="show"
                   name={`row-radio-buttons-group-${k}`}
                   value={showKind(k as K8SKind | MongoDBKind)}
-                  onChange={handleShowKindChange(k as K8SKind | MongoDBKind)}
+                  onChange={handleVisibilityChange(k as K8SKind | MongoDBKind)}
                 >
-                  {ResourceDisplayValues.map((v) => (
+                  {ResourceVisibilityValues.map((v) => (
                     <FormControlLabel
                       key={v}
                       value={v}
                       control={<Radio size="small" />}
-                      label={ResourceDisplayLabels[v]}
+                      label={aResourceVisibilityLabels[v]}
                       sx={{ "& .MuiFormControlLabel-label": { fontSize: "smaller" } }}
                     />
                   ))}

@@ -46,19 +46,6 @@ export type MongodbDeploymentWithActions = {
   k8sResources: K8SResourceWithActions[];
 };
 
-export type K8SResourceUIModel = K8SResourceWithActions & {
-  ui: {
-    location: {
-      x: number;
-      y: number;
-    };
-  };
-};
-
-export type MongodbDeploymentUIModel = {
-  k8sResources: K8SResourceUIModel[];
-};
-
 export type Context = {
   cluster: string;
   user: string;

@@ -1,7 +1,8 @@
 import { K8SKind, MongoDBKind } from "../../../core/enums";
-import { K8SResourceWithActions, MongodbDeploymentUIModel, MongodbDeploymentWithActions } from "../../../core/models";
+import { K8SResourceWithActions, MongodbDeploymentWithActions } from "../../../core/models";
 import { balanceSortedArray, groupBy, isOperatorPod } from "../../../core/utils";
-import { DisplaySettings, ResourceDisplay } from "../../models/settings";
+import { DisplaySettings, MongodbDeploymentUIModel } from "../../ui-models";
+import { NetworkLayout, ResourceVisibility } from "../../ui-enums";
 
 const OperatorSortWeight = 10000;
 
@@ -107,8 +108,8 @@ const applyDisplaySettings = (settings: DisplaySettings, graph: Graph) =>
   Array.from(graph.nodes.values()).forEach((n) => {
     const resDisplay = settings.ResourcesMap.get(n.res.kind);
     if (
-      resDisplay === ResourceDisplay.Hide ||
-      (resDisplay === ResourceDisplay.ShowOnlyIfReferenced &&
+      resDisplay === ResourceVisibility.Hide ||
+      (resDisplay === ResourceVisibility.ShowOnlyIfReferenced &&
         !n.parent &&
         !n.children.length &&
         !n.dependsOnNodes.length &&
@@ -139,7 +140,7 @@ const addNodesRelation = (graph: Graph) =>
     });
   });
 
-export const getMongodbDeploymentNetwork = (
+export const generateFixedLayout = (
   deployment: MongodbDeploymentWithActions,
   settings: DisplaySettings
 ): MongodbDeploymentUIModel => {

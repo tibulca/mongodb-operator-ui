@@ -4,24 +4,27 @@ import { Network as VisNetwork, Options as VisOptions } from "vis";
 import { v4 } from "uuid";
 
 import "react-graph-vis/node_modules/vis-network/styles/vis-network.css";
+import { Node, Edge } from "../ui-models";
+import { NetworkLayout } from "../ui-enums";
 
-import * as NetworkModels from "../models/network";
-
-const options: VisOptions = {
-  layout: {
-    //hierarchical: true,
-    // hierarchical: {
-    //   direction: "UD",
-    //   sortMethod: "directed", // hubsize / directed
-    //   shakeTowards: "roots", // roots / leaves
-    //   edgeMinimization: true,
-    //   parentCentralization: false,
-    //   blockShifting: false,
-    //   nodeSpacing: 200,
-    //   treeSpacing: 175,
-    //   levelSeparation: 150,
-    // },
-  },
+const options = (layout: NetworkLayout): VisOptions => ({
+  layout:
+    layout === NetworkLayout.Fixed
+      ? {}
+      : {
+          //hierarchical: true,
+          hierarchical: {
+            direction: "UD",
+            sortMethod: "directed", // hubsize / directed
+            shakeTowards: "roots", // roots / leaves
+            edgeMinimization: true,
+            parentCentralization: false,
+            blockShifting: false,
+            nodeSpacing: 200,
+            treeSpacing: 175,
+            levelSeparation: 150,
+          },
+        },
   interaction: {
     dragNodes: true,
   },
@@ -57,7 +60,7 @@ const options: VisOptions = {
       roundness: 0.2,
     },
   },
-};
+});
 
 const events = (selectNode: (uid: string | undefined) => void) => ({
   select(event: any) {
@@ -71,9 +74,10 @@ const events = (selectNode: (uid: string | undefined) => void) => ({
 });
 
 export type NetworkProps = {
+  layout: NetworkLayout;
   data: {
-    nodes: NetworkModels.Node[];
-    edges: NetworkModels.Edge[];
+    nodes: Node[];
+    edges: Edge[];
   };
   onSelectNode: (uid: string | undefined) => void;
 };
@@ -81,11 +85,13 @@ export type NetworkProps = {
 const Network = (props: NetworkProps) => {
   const [network, setNetwork] = useState<VisNetwork | null>(null);
 
+  console.log("-----", props.layout);
+
   return (
     <NetworkGraph
       key={v4()}
       graph={props.data}
-      options={options}
+      options={options(props.layout)}
       events={events(props.onSelectNode)}
       getNetwork={(n: VisNetwork) => {
         // if you want access to vis.js network api you can set the state

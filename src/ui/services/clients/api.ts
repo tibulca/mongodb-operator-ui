@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { HttpContentType, HttpHeader, HttpMethod, HttpStatusCode } from "../../../core/enums";
-import { Context, MongodbDeploymentUIModel, MongodbDeploymentWithActions, NodeHttpAction } from "../../../core/models";
+import { Context, MongodbDeploymentWithActions, NodeHttpAction } from "../../../core/models";
 import { Time } from "../../../core/utils";
 
 type errCallback = (err: Error) => void;

@@ -61,6 +61,10 @@ const downloadTextFile = (filename: string, text: string) => {
   element.download = filename;
   document.body.appendChild(element);
   element.click();
+
+  // const wnd = window.open("about:blank") as Window;
+  // wnd.document.write(text);
+  // wnd.document.close();
 };
 
 const executeAction = async (action: NodeHttpAction) => {

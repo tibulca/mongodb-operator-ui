@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo, createContext } from "react";
 import Deployment from "./deployment";
 import SettingsModal from "./settings";
 import apiClient from "../services/clients/api";
-import { Context, MongodbDeploymentUIModel, MongodbDeploymentWithActions } from "../../core/models";
+import { Context, MongodbDeploymentWithActions } from "../../core/models";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 //import Container from "@mui/material/Container";
@@ -27,7 +27,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CssBaseline from "@mui/material/CssBaseline";
 import Head from "next/head";
-import { DisplaySettings, ResourceDisplay } from "../models/settings";
+import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import AppHeader from "./app-header";
 import localStorage from "../services/localStorage";
 
@@ -35,7 +35,8 @@ import localStorage from "../services/localStorage";
 import theme from "../theme";
 import styles from "../styles/Home.module.css";
 import { K8SKind, MongoDBKind } from "../../core/enums";
-import { getMongodbDeploymentNetwork } from "../services/network/deploymentNetwork";
+import { generateFixedLayout } from "../services/layout/fixed";
+import { NetworkLayout, ResourceVisibility } from "../ui-enums";
 
 const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
@@ -99,16 +100,17 @@ const localStorageSettings = (): DisplaySettings => {
   }
 
   const defaultRes = {
-    [K8SKind.PersistentVolume]: ResourceDisplay.Hide,
-    [K8SKind.PersistentVolumeClaim]: ResourceDisplay.Hide,
-    [K8SKind.Service]: ResourceDisplay.Hide,
-    [K8SKind.Secret]: ResourceDisplay.Hide,
-    [K8SKind.ConfigMap]: ResourceDisplay.Hide,
-    [K8SKind.CustomResourceDefinition]: ResourceDisplay.ShowOnlyIfReferenced,
-    [MongoDBKind.MongoDBUser]: ResourceDisplay.ShowOnlyIfReferenced,
+    [K8SKind.PersistentVolume]: ResourceVisibility.Hide,
+    [K8SKind.PersistentVolumeClaim]: ResourceVisibility.Hide,
+    [K8SKind.Service]: ResourceVisibility.Hide,
+    [K8SKind.Secret]: ResourceVisibility.Hide,
+    [K8SKind.ConfigMap]: ResourceVisibility.Hide,
+    [K8SKind.CustomResourceDefinition]: ResourceVisibility.ShowOnlyIfReferenced,
+    [MongoDBKind.MongoDBUser]: ResourceVisibility.ShowOnlyIfReferenced,
   };
   const defaultSettings = {
     SettingsVersion,
+    Layout: NetworkLayout.Fixed,
     Resources: defaultRes,
     ResourcesMap: new Map(Object.entries(defaultRes)),
     Context: { contexts: [], currentContext: "" },
@@ -143,7 +145,7 @@ const Home: NextPage = () => {
     if (localStorageSettings().Context.currentContext !== settings.Context.currentContext) {
       setLastRefreshRequest(Date.now());
     } else if (rawDeployment) {
-      setDeployment(getMongodbDeploymentNetwork(rawDeployment, settings));
+      setDeployment(generateFixedLayout(rawDeployment, settings));
     }
     localStorage.setItem("settings", settings);
   };
@@ -151,7 +153,7 @@ const Home: NextPage = () => {
   const handleSetDeployment = (deployment: MongodbDeploymentWithActions) => {
     setRefreshInProgress(false);
     setRawDeployment(deployment);
-    setDeployment(getMongodbDeploymentNetwork(deployment, settings));
+    setDeployment(generateFixedLayout(deployment, settings));
   };
 
   useEffect(() => {

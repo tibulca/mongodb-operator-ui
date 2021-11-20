@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 import YAML from "yaml";
 
-import { MongodbDeploymentUIModel } from "../../core/models";
 import NodeInfoModal from "./node-info-modal";
 import Network from "./network";
-import * as NetworkModels from "../models/network";
+import * as NetworkModels from "../ui-models";
 import { K8SKind } from "../../core/enums";
-import { DisplaySettings } from "../models/settings";
+import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import { isOperatorPod } from "../../core/utils";
 
 type DeploymentProps = {
@@ -191,7 +190,11 @@ const Deployment = (props: DeploymentProps) => {
       />
 
       <div style={{ border: "1px solid darkgray", height: "100%" }}>
-        <Network data={buildGraph(props.settings, props.data)} onSelectNode={setSelectedNodeUID} />
+        <Network
+          data={buildGraph(props.settings, props.data)}
+          layout={props.settings.Layout}
+          onSelectNode={setSelectedNodeUID}
+        />
       </div>
     </div>
   );

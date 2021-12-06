@@ -3,69 +3,21 @@ import React, { useEffect, useState, useMemo, createContext } from "react";
 import Deployment from "./deployment";
 import SettingsModal from "./settings";
 import apiClient from "../services/clients/api";
-import { Context, MongodbDeploymentWithActions } from "../../core/models";
-import CircularProgress from "@mui/material/CircularProgress";
+import { MongodbDeploymentWithActions } from "../../core/models";
 import Box from "@mui/material/Box";
-//import Container from "@mui/material/Container";
-import { styled, Theme, CSSObject } from "@mui/material/styles";
-import MuiDrawer from "@mui/material/Drawer";
-import Toolbar from "@mui/material/Toolbar";
-import List from "@mui/material/List";
-import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import ListItem from "@mui/material/ListItem";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
+import { styled, Theme } from "@mui/material/styles";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import SettingsIcon from "@mui/icons-material/Settings";
-import MenuIcon from "@mui/icons-material/Menu";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import CssBaseline from "@mui/material/CssBaseline";
 import Head from "next/head";
 import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import AppHeader from "./app-header";
-import localStorage from "../services/localStorage";
-
-//import "../src/ui/styles/globals.css";
-import theme from "../theme";
-import styles from "../styles/Home.module.css";
-import { K8SKind, MongoDBKind } from "../../core/enums";
+import appSettings from "../services/appSettings";
 import { generateFixedLayout } from "../services/layout/fixed";
-import { NetworkLayout, ResourceVisibility } from "../ui-enums";
+import AppConfigDrawer, { AppConfigDrawerWidth } from "./app-config-drawer";
 
 const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
-const drawerWidth = 240;
-
 const bgColor = (theme: Theme) => (theme.palette.mode === "dark" ? "#016948" : "#51ac4e");
-
-const openedMixin = (theme: Theme): CSSObject => ({
-  width: drawerWidth,
-  backgroundColor: bgColor(theme),
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-  }),
-  overflowX: "hidden",
-});
-
-const closedMixin = (theme: Theme): CSSObject => ({
-  transition: theme.transitions.create("width", {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  overflowX: "hidden",
-  width: `calc(${theme.spacing(7)} + 1px)`,
-  backgroundColor: bgColor(theme),
-  [theme.breakpoints.up("sm")]: {
-    width: `calc(${theme.spacing(9)} + 1px)`,
-  },
-});
 
 const DrawerHeader = styled("div")(({ theme }) => ({
   display: "flex",
@@ -76,55 +28,15 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   ...theme.mixins.toolbar,
 }));
 
-const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" })(({ theme, open }) => ({
-  width: drawerWidth,
-  flexShrink: 0,
-  whiteSpace: "nowrap",
-  boxSizing: "border-box",
-  ...(open && {
-    ...openedMixin(theme),
-    "& .MuiDrawer-paper": openedMixin(theme),
-  }),
-  ...(!open && {
-    ...closedMixin(theme),
-    "& .MuiDrawer-paper": closedMixin(theme),
-  }),
-}));
-
-const localStorageSettings = (): DisplaySettings => {
-  const SettingsVersion = 1;
-  const settings = localStorage.getItem<DisplaySettings>("settings");
-  if (settings && settings.SettingsVersion === SettingsVersion) {
-    settings.ResourcesMap = new Map(Object.entries(settings.Resources));
-    return settings;
-  }
-
-  const defaultRes = {
-    [K8SKind.PersistentVolume]: ResourceVisibility.Hide,
-    [K8SKind.PersistentVolumeClaim]: ResourceVisibility.Hide,
-    [K8SKind.Service]: ResourceVisibility.Hide,
-    [K8SKind.Secret]: ResourceVisibility.Hide,
-    [K8SKind.ConfigMap]: ResourceVisibility.Hide,
-    [K8SKind.CustomResourceDefinition]: ResourceVisibility.ShowOnlyIfReferenced,
-    [MongoDBKind.MongoDBUser]: ResourceVisibility.ShowOnlyIfReferenced,
-  };
-  const defaultSettings = {
-    SettingsVersion,
-    Layout: NetworkLayout.Fixed,
-    Resources: defaultRes,
-    ResourcesMap: new Map(Object.entries(defaultRes)),
-    Context: { contexts: [], currentContext: "" },
-  };
-
-  return defaultSettings;
-};
-
 const Home: NextPage = () => {
   const [lastRefreshRequest, setLastRefreshRequest] = useState(Date.now());
   const [refreshInProgress, setRefreshInProgress] = useState(false);
-  const [settings, setSettings] = useState<DisplaySettings>(localStorageSettings());
 
+  const [appConfigDrawerOpen, setAppConfigDrawerOpen] = useState(false);
+
+  const [settings, setSettings] = useState<DisplaySettings>(appSettings.load());
   const [showSettings, setShowSettings] = useState<boolean>(false);
+
   const [themeMode, setThemeMode] = useState<"light" | "dark">("dark");
   const colorMode = useMemo(
     () => ({ toggleColorMode: () => setThemeMode((prevMode) => (prevMode === "light" ? "dark" : "light")) }),
@@ -135,19 +47,14 @@ const Home: NextPage = () => {
   const [rawDeployment, setRawDeployment] = useState<MongodbDeploymentWithActions | undefined>();
   const [deployment, setDeployment] = useState<MongodbDeploymentUIModel | undefined>();
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const handleDrawerOpen = () => setDrawerOpen(true);
-  const handleDrawerClose = () => setDrawerOpen(false);
-
   const handleChangeSettings = (settings: DisplaySettings) => {
     setSettings(settings);
-    if (localStorageSettings().Context.currentContext !== settings.Context.currentContext) {
+    if (appSettings.load().Context.currentContext !== settings.Context.currentContext) {
       setLastRefreshRequest(Date.now());
     } else if (rawDeployment) {
       setDeployment(generateFixedLayout(rawDeployment, settings));
     }
-    localStorage.setItem("settings", settings);
+    appSettings.save(settings);
   };
 
   const handleSetDeployment = (deployment: MongodbDeploymentWithActions) => {
@@ -183,7 +90,6 @@ const Home: NextPage = () => {
   }, [lastRefreshRequest]);
 
   return (
-    //<Container maxWidth="xl" style={{ height: "100%" }}>
     <ColorModeContext.Provider value={colorMode}>
       <Head>
         <title>MongoDB Operator Dashboard</title>
@@ -192,72 +98,21 @@ const Home: NextPage = () => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Box sx={{ display: "flex" }} role="layout">
-          <AppHeader position="fixed" open={drawerOpen} sx={{ bgcolor: bgColor(theme) }} drawerwidth={drawerWidth}>
-            <Toolbar>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                onClick={handleDrawerOpen}
-                edge="start"
-                sx={{
-                  marginRight: "36px",
-                  ...(drawerOpen && { display: "none" }),
-                }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h5" noWrap component="div">
-                MongoDB Operator Dashboard
-              </Typography>
-              {(!deployment || refreshInProgress) && (
-                <Box sx={{ marginLeft: "30px" }}>
-                  <CircularProgress />
-                </Box>
-              )}
-            </Toolbar>
-          </AppHeader>
+          <AppHeader
+            theme={theme}
+            refreshInProgress={!deployment || refreshInProgress}
+            appConfigDrawerOpen={appConfigDrawerOpen}
+            appConfigDrawerWidth={AppConfigDrawerWidth}
+            onOpenAppConfigDrawer={() => setAppConfigDrawerOpen(true)}
+          />
 
-          <Drawer variant="permanent" open={drawerOpen}>
-            <DrawerHeader>
-              <IconButton onClick={handleDrawerClose}>
-                {theme.direction === "rtl" ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-              </IconButton>
-            </DrawerHeader>
-            <Divider />
-            <List>
-              <ListItem button onClick={() => setLastRefreshRequest(Date.now())}>
-                <ListItemIcon>
-                  <RefreshIcon />
-                </ListItemIcon>
-                <ListItemText primary={"Refresh"} />
-              </ListItem>
-              <ListItem button onClick={colorMode.toggleColorMode}>
-                <ListItemIcon>{theme.palette.mode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}</ListItemIcon>
-                <ListItemText primary={"Theme"} />
-              </ListItem>
-              <ListItem button onClick={() => setShowSettings(true)}>
-                <ListItemIcon>
-                  <SettingsIcon />
-                </ListItemIcon>
-                <ListItemText primary={"Settings"} />
-              </ListItem>
-              {/* {["Inbox", "Starred", "Send email", "Drafts"].map((text, index) => (
-              <ListItem button key={text}>
-                <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItem>
-            ))} */}
-            </List>
-            {/* <Divider /> */}
-            {/* <List>
-            {["All mail", "Trash", "Spam"].map((text, index) => (
-              <ListItem button key={text}>
-                <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>
-                <ListItemText primary={text} />
-              </ListItem>
-            ))}
-          </List> */}
-          </Drawer>
+          <AppConfigDrawer
+            open={appConfigDrawerOpen}
+            onRefresh={() => setLastRefreshRequest(Date.now())}
+            onClose={() => setAppConfigDrawerOpen(false)}
+            onShowSettings={() => setShowSettings(true)}
+            onToggleColorMode={colorMode.toggleColorMode}
+          />
 
           <Box role="main" component="main" sx={{ flexGrow: 1, p: 3 }}>
             <DrawerHeader />
@@ -273,7 +128,6 @@ const Home: NextPage = () => {
         </Box>
       </ThemeProvider>
     </ColorModeContext.Provider>
-    //</Container>
   );
 };
 

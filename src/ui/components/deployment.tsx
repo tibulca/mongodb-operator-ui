@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import YAML from "yaml";
 
-import NodeInfoModal from "./node-info-modal";
+import NodeInfoDrawer from "./node-info-drawer";
 import Network from "./network";
 import * as NetworkModels from "../ui-models";
 import { K8SKind } from "../../core/enums";
@@ -14,7 +14,7 @@ type DeploymentProps = {
 };
 
 const ResourceImageMap: Record<string, string> = {
-  ["operator"]: "/images/pod-256.png",
+  ["operator"]: "/images/pod-256-lightgreen.png",
   [K8SKind.Pod.toLowerCase()]: "/images/pod-256.png",
   [K8SKind.CustomResourceDefinition.toLowerCase()]: "/images/crd-256.png",
   [K8SKind.Deployment.toLowerCase()]: "/images/deploy-256.png",
@@ -25,10 +25,10 @@ const ResourceImageMap: Record<string, string> = {
   [K8SKind.Service.toLowerCase()]: "/images/svc-256.png",
   [K8SKind.ConfigMap.toLowerCase()]: "/images/cm-256.png",
   [K8SKind.Secret.toLowerCase()]: "/images/secret-256.png",
-  mongodb: "/images/crd-u-256.png",
-  mongodbcommunity: "/images/crd-u-256.png",
-  mongodbopsmanager: "/images/crd-u-256.png",
-  mongodbuser: "/images/user-256.png",
+  mongodb: "/images/crd-u-256-lightgreen.png",
+  mongodbcommunity: "/images/crd-u-256-lightgreen.png",
+  mongodbopsmanager: "/images/crd-u-256-lightgreen.png",
+  mongodbuser: "/images/user-256-lightgreen.png",
 };
 
 const networkDataContainer = () => {
@@ -176,8 +176,7 @@ const Deployment = (props: DeploymentProps) => {
 
   return (
     <div style={{ height: "calc(100% - 64px)", backgroundColor: "white" }}>
-      <NodeInfoModal
-        show={!!selectedNodeUID}
+      <NodeInfoDrawer
         title={nodeDetails.title}
         node={{
           kind: nodeDetails.node?.kind ?? "",
@@ -187,6 +186,8 @@ const Deployment = (props: DeploymentProps) => {
         sections={nodeDetails.sections}
         actions={nodeDetails.node?.actions ?? []}
         onClose={() => setSelectedNodeUID(undefined)}
+        open={!!selectedNodeUID}
+        width={900}
       />
 
       <div style={{ border: "1px solid darkgray", height: "100%" }}>

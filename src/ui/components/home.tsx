@@ -5,7 +5,6 @@ import SettingsModal from "./settings";
 import apiClient from "../services/clients/api";
 import { MongodbDeploymentWithActions } from "../../core/models";
 import Box from "@mui/material/Box";
-import { styled, Theme } from "@mui/material/styles";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Head from "next/head";
@@ -13,20 +12,11 @@ import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import AppHeader from "./app-header";
 import appSettings from "../services/appSettings";
 import { generateFixedLayout } from "../services/layout/fixed";
-import AppConfigDrawer, { AppConfigDrawerWidth } from "./app-config-drawer";
+import AppConfigDrawer from "./app-config-drawer";
+import { Toolbar } from "@mui/material";
 
 const ColorModeContext = createContext({ toggleColorMode: () => {} });
-
-const bgColor = (theme: Theme) => (theme.palette.mode === "dark" ? "#016948" : "#51ac4e");
-
-const DrawerHeader = styled("div")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-end",
-  padding: theme.spacing(0, 1),
-  // necessary for content to be below app bar
-  ...theme.mixins.toolbar,
-}));
+const AppConfigDrawerWidth = 240;
 
 const Home: NextPage = () => {
   const [lastRefreshRequest, setLastRefreshRequest] = useState(Date.now());
@@ -97,6 +87,7 @@ const Home: NextPage = () => {
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <Toolbar />
         <Box sx={{ display: "flex" }} role="layout">
           <AppHeader
             theme={theme}
@@ -108,6 +99,7 @@ const Home: NextPage = () => {
 
           <AppConfigDrawer
             open={appConfigDrawerOpen}
+            width={AppConfigDrawerWidth}
             onRefresh={() => setLastRefreshRequest(Date.now())}
             onClose={() => setAppConfigDrawerOpen(false)}
             onShowSettings={() => setShowSettings(true)}
@@ -115,7 +107,6 @@ const Home: NextPage = () => {
           />
 
           <Box role="main" component="main" sx={{ flexGrow: 1, p: 3 }}>
-            <DrawerHeader />
             {deployment && <Deployment data={deployment} settings={settings} />}
           </Box>
 

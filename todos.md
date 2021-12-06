@@ -26,7 +26,7 @@
     1. expose metrics from operator
     2. prometheus (or mdb?) / grafana / alert manager. Can we use
     3. implement health status based on metrics and display those metrics in UI
-11. show resource details in a right-side "drawer" instead of a modal
+11. [x] show resource details in a right-side "drawer" instead of a modal
 12. group nodes based on settings (e.g. PVCs) - on click show a modal with these nodes
 13. multi-cluster
 14. filters (e.g. not "\*operator-tests\*")
@@ -34,4 +34,5 @@
 16. search (name, labels)
 17. dark theme for graph?
 18. [x] helm chart
-19.
+19. use https://www.mongodb.design/ UI framework
+20.

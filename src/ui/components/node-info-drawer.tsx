@@ -1,10 +1,8 @@
-import { useState } from "react";
-
+import React, { useState } from "react";
 import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Modal,
   Typography,
   Box,
   Button,
@@ -12,15 +10,29 @@ import {
   Snackbar,
   TextField,
   CircularProgress,
-  responsiveFontSizes,
+  Toolbar,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MuiAlert from "@mui/material/Alert";
-
 import apiClient from "../services/clients/api";
 import { HttpContentType } from "../../core/enums";
 import { NodeHttpAction } from "../../core/models";
 import PositionedMenu from "./positioned-menu";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import { styled } from "@mui/material/styles";
+import Drawer from "@mui/material/Drawer";
+
+type Anchor = "top" | "left" | "bottom" | "right";
+
+const DrawerHeader = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  padding: theme.spacing(0, 1),
+  // necessary for content to be below app bar
+  ...theme.mixins.toolbar,
+}));
 
 const style = {
   position: "absolute" as "absolute",
@@ -40,18 +52,19 @@ type InfoSection = {
   content: string;
 };
 
-type NodeInfoModalProps = {
+type NodeInfoDrawerProps = {
   // todo: node details should not be in this type. Instead, this component should only dispatch the actions (configurable in props)
   node: {
     name: string;
     namespace: string;
     kind: string;
   };
-  show: boolean;
   title: string;
   sections: InfoSection[];
   actions: NodeHttpAction[];
   onClose: () => void;
+  open: boolean;
+  width: number;
 };
 
 const downloadTextFile = (filename: string, text: string) => {
@@ -134,46 +147,74 @@ const renderInfoSections = (
   };
 
   return sections.map((s, idx) => (
-    <Accordion key={idx} expanded={expandedPanel === `panel${idx}`} onChange={handleChange(`panel${idx}`)}>
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        aria-controls={`panel${idx}a-content`}
-        id={`panel${idx}a-header`}
+    <ListItem key={idx}>
+      <Accordion
+        key={idx}
+        expanded={expandedPanel === `panel${idx}`}
+        onChange={handleChange(`panel${idx}`)}
+        style={{ width: "100%" }}
       >
-        <Typography>{s.title}:</Typography>
-      </AccordionSummary>
-      <AccordionDetails>
-        <Typography>
-          <TextField multiline maxRows={18} fullWidth disabled value={s.content} />
-          {/* <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre> */}
-        </Typography>
-      </AccordionDetails>
-    </Accordion>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls={`panel${idx}a-content`}
+          id={`panel${idx}a-header`}
+        >
+          <Typography>{s.title}:</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography>
+            <TextField multiline maxRows={15} fullWidth disabled value={s.content} />
+            {/* <pre style={{ maxHeight: "500px", overflow: "scroll", fontSize: "smaller" }}>{s.content}</pre> */}
+          </Typography>
+        </AccordionDetails>
+      </Accordion>
+    </ListItem>
   ));
 };
 
-const NodeInfoModal = (props: NodeInfoModalProps) => {
+const NodeInfoDrawer = (props: NodeInfoDrawerProps) => {
   const [expanded, setExpanded] = useState<string | false>("panel0");
   const [notification, setNotification] = useState<{ text: string; isError: boolean }>({ text: "", isError: false });
   const [actionInProgress, setActionInProgress] = useState(false);
 
+  const [state, setState] = React.useState({
+    top: false,
+    left: false,
+    bottom: false,
+    right: false,
+  });
+
+  const toggleDrawer = (anchor: Anchor, open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
+    if (
+      event.type === "keydown" &&
+      ((event as React.KeyboardEvent).key === "Tab" || (event as React.KeyboardEvent).key === "Shift")
+    ) {
+      return;
+    }
+
+    setState({ ...state, [anchor]: open });
+  };
+
+  const anchor = "right";
+
   return (
-    <Modal
-      open={props.show}
-      onClose={props.onClose}
-      aria-labelledby="modal-modal-title"
-      aria-describedby="modal-modal-description"
-      style={{ overflow: "scroll" }}
-    >
-      <Box role="modal" sx={style}>
-        <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+    <Drawer anchor={anchor} open={props.open} onClose={props.onClose}>
+      <Toolbar />
+      <Box
+        sx={{ width: props.width }}
+        role="presentation"
+        onClick={toggleDrawer(anchor, false)}
+        onKeyDown={toggleDrawer(anchor, false)}
+      >
+        <Typography id="modal-modal-description" sx={{ mt: 2, paddingLeft: "20px" }}>
+          <h2>{props.title}</h2>
           <Stack direction="row" spacing={2}>
-            <h2>{props.title}</h2>
             {renderActions(
               props.actions,
               (action: NodeHttpAction) => setActionInProgress(true),
               (action: NodeHttpAction, response: { text: string; isError: boolean }) => {
-                setActionInProgress(false), setNotification(response);
+                setActionInProgress(false);
+                setNotification(response);
               }
             )}
             {actionInProgress && (
@@ -183,7 +224,7 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
             )}
           </Stack>
         </Typography>
-        {renderInfoSections(props.sections, expanded, (panel: string | false) => setExpanded(panel))}
+        <List>{renderInfoSections(props.sections, expanded, (panel: string | false) => setExpanded(panel))}</List>
         <Snackbar
           open={!!notification.text}
           autoHideDuration={3000}
@@ -200,8 +241,8 @@ const NodeInfoModal = (props: NodeInfoModalProps) => {
           </MuiAlert>
         </Snackbar>
       </Box>
-    </Modal>
+    </Drawer>
   );
 };
 
-export default NodeInfoModal;
+export default NodeInfoDrawer;

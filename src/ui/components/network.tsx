@@ -65,10 +65,10 @@ const options = (layout: NetworkLayout): VisOptions => ({
 const events = (selectNode: (uid: string | undefined) => void) => ({
   select(event: any) {
     const { nodes, edges } = event;
-    console.log("Selected nodes:");
-    console.log(nodes);
-    console.log("Selected edges:");
-    console.log(edges);
+    // console.log("Selected nodes:");
+    // console.log(nodes);
+    // console.log("Selected edges:");
+    // console.log(edges);
     selectNode(nodes[0]);
   },
 });

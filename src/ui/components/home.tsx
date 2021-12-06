@@ -11,7 +11,7 @@ import Head from "next/head";
 import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import AppHeader from "./app-header";
 import appSettings from "../services/appSettings";
-import { generateFixedLayout } from "../services/layout/fixed";
+import { generateLayout } from "../services/layout";
 import AppConfigDrawer from "./app-config-drawer";
 import { Toolbar } from "@mui/material";
 
@@ -42,7 +42,7 @@ const Home: NextPage = () => {
     if (appSettings.load().Context.currentContext !== settings.Context.currentContext) {
       setLastRefreshRequest(Date.now());
     } else if (rawDeployment) {
-      setDeployment(generateFixedLayout(rawDeployment, settings));
+      setDeployment(generateLayout(rawDeployment, settings));
     }
     appSettings.save(settings);
   };
@@ -50,7 +50,7 @@ const Home: NextPage = () => {
   const handleSetDeployment = (deployment: MongodbDeploymentWithActions) => {
     setRefreshInProgress(false);
     setRawDeployment(deployment);
-    setDeployment(generateFixedLayout(deployment, settings));
+    setDeployment(generateLayout(deployment, settings));
   };
 
   useEffect(() => {

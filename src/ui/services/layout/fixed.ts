@@ -1,63 +1,34 @@
 import { K8SKind, MongoDBKind } from "../../../core/enums";
-import { K8SResourceWithActions, MongodbDeploymentWithActions } from "../../../core/models";
 import { balanceSortedArray, groupBy, isOperatorPod } from "../../../core/utils";
-import { DisplaySettings, MongodbDeploymentUIModel } from "../../ui-models";
-import { NetworkLayout, ResourceVisibility } from "../../ui-enums";
+import { GraphNode, Graph } from "./models";
 
 const OperatorSortWeight = 10000;
 
-type Node = {
-  res: K8SResourceWithActions;
-
-  x: number;
-  y: number;
-  weight: number;
-  level: number;
-
-  parent: Node | undefined;
-  children: Node[];
-  dependsOnNodes: Node[];
-  dependentNodes: Node[];
-};
-
-type Graph = {
-  nodes: Map<string, Node>;
-  levelNodes: Map<number, Node[]>;
-};
-
 const LevelAdjustment = new Map<K8SKind | MongoDBKind, number>([
-  // [K8SKind.Deployment, 2],
-  // [K8SKind.StatefulSet, 2],
   [K8SKind.Secret, 5],
   [K8SKind.ConfigMap, 5],
   [K8SKind.PersistentVolumeClaim, 5],
 ]);
 
-const updateNodeLevelRec = (n: Node) => {
+const updateNodeLevelRec = (n: GraphNode) => {
   n.level = n.parent ? n.parent.level + 1 : LevelAdjustment.get(n.res.kind) ?? 0;
   n.children.forEach((cn) => updateNodeLevelRec(cn));
 };
 
-const updateNodeWeightRec = (n: Node) => {
-  // n.w = 1 + n.children.reduce((acc, cn) => acc + updateNodeWeightRec(cn), 0) + (isOperatorPod(n.res) ? 100 : 0);
-
-  const childrenByLevel = groupBy(n.children, (c: Node) => String(c.level));
+const updateNodeWeightRec = (n: GraphNode) => {
+  const childrenByLevel = groupBy(n.children, (c: GraphNode) => String(c.level));
 
   n.weight = Math.max(
     isOperatorPod(n.res) ? OperatorSortWeight + 1 : 1,
-    ...Array.from(childrenByLevel.values()).map((childrenGroup) => {
-      const w = childrenGroup.map(updateNodeWeightRec).reduce((acc, w) => acc + w, 0);
-      if (w > 9 && w < 100 && n.parent) {
-        console.log(w, n);
-      }
-      return w;
-    })
+    ...Array.from(childrenByLevel.values()).map((childrenGroup) =>
+      childrenGroup.map(updateNodeWeightRec).reduce((acc, w) => acc + w, 0)
+    )
   );
 
   return n.weight;
 };
 
-const adjustNodeLevelRec = (n: Node, parentOrDepLevel: number) => {
+const adjustNodeLevelRec = (n: GraphNode, parentOrDepLevel: number) => {
   n.level = Math.max(parentOrDepLevel + 1, n.level);
   n.children.forEach((cn) => adjustNodeLevelRec(cn, n.level));
 };
@@ -68,7 +39,6 @@ const updateLevelsAndWeight = (g: Graph) => {
   parentNodes.forEach(updateNodeLevelRec);
 
   nodes
-    // .filter((n) => n.dependsOnNodes.length && n.res.kind !== K8SKind.Service)
     .filter((n) => n.dependsOnNodes.length)
     .forEach((n) => adjustNodeLevelRec(n, Math.max(...n.dependsOnNodes.map((dn) => dn.level))));
 
@@ -79,7 +49,7 @@ const updateLevelsAndWeight = (g: Graph) => {
 
 const updateCoordinates = (
   g: Graph,
-  n: Node,
+  n: GraphNode,
   xCoordByLevel: number[],
   padding: { x: number; y: number },
   parentOffsetX: number
@@ -104,76 +74,12 @@ const getPadding = (graph: Graph) => {
   };
 };
 
-const applyDisplaySettings = (settings: DisplaySettings, graph: Graph) =>
-  Array.from(graph.nodes.values()).forEach((n) => {
-    const resDisplay = settings.ResourcesMap.get(n.res.kind);
-    if (
-      resDisplay === ResourceVisibility.Hide ||
-      (resDisplay === ResourceVisibility.ShowOnlyIfReferenced &&
-        !n.parent &&
-        !n.children.length &&
-        !n.dependsOnNodes.length &&
-        !n.dependentNodes.length)
-    ) {
-      if (n.parent) {
-        n.parent.children = n.parent.children.filter((c) => c.res.uid !== n.res.uid);
-      }
-      n.children.forEach((c) => {
-        c.parent = undefined;
-      });
-      n.dependentNodes.forEach((dn) => dn.dependsOnNodes.filter((d) => d.res.uid === n.res.uid));
-      graph.nodes.delete(n.res.uid);
-    }
-  });
-
-const addNodesRelation = (graph: Graph) =>
-  graph.nodes.forEach((n) => {
-    const ownerUid = n.res.ownerReference?.uid;
-    if (ownerUid) {
-      n.parent = graph.nodes.get(ownerUid);
-      n.parent?.children.push(n);
-    }
-    n.res.dependsOnUIDs?.forEach((dn) => {
-      const dependsOnNode = graph.nodes.get(dn) as Node;
-      n.dependsOnNodes.push(dependsOnNode);
-      dependsOnNode.dependentNodes.push(n);
-    });
-  });
-
-export const generateFixedLayout = (
-  deployment: MongodbDeploymentWithActions,
-  settings: DisplaySettings
-): MongodbDeploymentUIModel => {
-  const graph: Graph = {
-    nodes: new Map(
-      deployment.k8sResources.map((res) => [
-        res.uid,
-        {
-          res,
-          x: 0,
-          y: 0,
-          weight: 0,
-          level: 0,
-          parent: undefined,
-          children: [],
-          dependsOnNodes: [],
-          dependentNodes: [],
-        } as Node,
-      ])
-    ),
-    levelNodes: new Map(),
-  };
-
-  addNodesRelation(graph);
-
-  applyDisplaySettings(settings, graph);
-
+export const setFixedLayout = (graph: Graph): Graph => {
   updateLevelsAndWeight(graph);
 
   graph.levelNodes.set(0, balanceSortedArray((graph.levelNodes.get(0) ?? []).sort((n1, n2) => n1.weight - n2.weight)));
 
   const padding = getPadding(graph);
-  //console.log(graph.levelNodes.size, maxNodesPerLevel, padding);
 
   const xCoordByLevel: number[] = [];
   graph.levelNodes.forEach((levelNodes) => {
@@ -181,13 +87,5 @@ export const generateFixedLayout = (
     levelNodesWithoutParent.forEach((n) => updateCoordinates(graph, n, xCoordByLevel, padding, 0));
   });
 
-  return {
-    k8sResources: Array.from(graph.nodes.values()).map((n) => ({
-      ...n.res,
-      //name: `l${n.level}, w${n.weight}, {${n.x},${n.y}}`,
-      ui: {
-        location: { x: Math.round(n.x), y: n.y },
-      },
-    })),
-  };
+  return graph;
 };

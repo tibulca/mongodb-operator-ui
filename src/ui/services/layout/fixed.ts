@@ -1,6 +1,11 @@
 import { K8SKind, MongoDBKind } from "../../../core/enums";
 import { balanceSortedArray, groupBy, isOperatorPod } from "../../../core/utils";
-import { GraphNode, Graph } from "./models";
+import { GraphNode, GraphNodes } from "./models";
+
+type Graph = {
+  nodes: GraphNodes;
+  levelNodes: Map<number, GraphNode[]>;
+};
 
 const OperatorSortWeight = 10000;
 
@@ -11,7 +16,7 @@ const LevelAdjustment = new Map<K8SKind | MongoDBKind, number>([
 ]);
 
 const updateNodeLevelRec = (n: GraphNode) => {
-  n.level = n.parent ? n.parent.level + 1 : LevelAdjustment.get(n.res.kind) ?? 0;
+  n.level = n.parent ? n.parent.level + 1 : LevelAdjustment.get(n.resource.kind) ?? 0;
   n.children.forEach((cn) => updateNodeLevelRec(cn));
 };
 
@@ -19,7 +24,7 @@ const updateNodeWeightRec = (n: GraphNode) => {
   const childrenByLevel = groupBy(n.children, (c: GraphNode) => String(c.level));
 
   n.weight = Math.max(
-    isOperatorPod(n.res) ? OperatorSortWeight + 1 : 1,
+    isOperatorPod(n.resource) ? OperatorSortWeight + 1 : 1,
     ...Array.from(childrenByLevel.values()).map((childrenGroup) =>
       childrenGroup.map(updateNodeWeightRec).reduce((acc, w) => acc + w, 0)
     )
@@ -74,7 +79,12 @@ const getPadding = (graph: Graph) => {
   };
 };
 
-export const setFixedLayout = (graph: Graph): Graph => {
+export const setFixedLayout = (nodes: GraphNodes): GraphNodes => {
+  let graph: Graph = {
+    nodes,
+    levelNodes: new Map(),
+  };
+
   updateLevelsAndWeight(graph);
 
   graph.levelNodes.set(0, balanceSortedArray((graph.levelNodes.get(0) ?? []).sort((n1, n2) => n1.weight - n2.weight)));
@@ -87,5 +97,5 @@ export const setFixedLayout = (graph: Graph): Graph => {
     levelNodesWithoutParent.forEach((n) => updateCoordinates(graph, n, xCoordByLevel, padding, 0));
   });
 
-  return graph;
+  return graph.nodes;
 };

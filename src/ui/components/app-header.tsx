@@ -40,7 +40,7 @@ type AppHeaderProps = {
   onOpenAppConfigDrawer: () => void;
 };
 
-export default (props: AppHeaderProps) => (
+const AppHeader = (props: AppHeaderProps) => (
   <StyledAppHeader
     position="fixed"
     open={props.appConfigDrawerOpen}
@@ -71,3 +71,5 @@ export default (props: AppHeaderProps) => (
     </Toolbar>
   </StyledAppHeader>
 );
+
+export default AppHeader;

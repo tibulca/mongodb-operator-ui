@@ -18,7 +18,10 @@ export const balanceSortedArray = <T>(arr: T[]) => {
 };
 
 export const isOperatorPod = (kRes: K8SResource) =>
-  kRes.kind === K8SKind.Pod && kRes.name.includes("operator") && kRes.ownerReference?.kind === K8SKind.ReplicaSet;
+  kRes.kind === K8SKind.Pod &&
+  kRes.name.includes("operator") &&
+  !kRes.name.includes("operator-ui") &&
+  kRes.ownerReference?.kind === K8SKind.ReplicaSet;
 
 export const groupBy = <T>(arr: T[], keyGetter: (el: T) => string): Map<string, T[]> =>
   arr.reduce((groups, el) => {

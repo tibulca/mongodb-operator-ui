@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-operator-ui
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-operator-ui
+  template:
+    metadata:
+      labels:
+        app: mongodb-operator-ui
+    spec:
+      serviceAccountName: mongodb-operator-ui-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: mongodb-operator-ui
+          image: quay.io/ciprian_tibulca/mdb-op-ui:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000

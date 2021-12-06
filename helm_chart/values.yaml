@@ -1,0 +1,4 @@
+# Default values for mongodb-operator-ui.
+
+registry:
+  imagePullSecrets: image-registries-secret

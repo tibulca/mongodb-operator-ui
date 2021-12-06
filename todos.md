@@ -33,4 +33,5 @@
 15. default namespace (if operator is not installed)
 16. search (name, labels)
 17. dark theme for graph?
-18.
+18. [x] helm chart
+19.

@@ -1,0 +1,11 @@
+apiVersion: v2
+name: mongodb-operator-ui
+description: MongoDB Kubernetes Operator UI
+version: 0.0.1
+kubeVersion: ">=1.16-0"
+keywords:
+  - mongodb
+  - operator
+home: https://github.com/tibulca/mdb-op-ui
+maintainers:
+  - name: Ciprian Tibulca

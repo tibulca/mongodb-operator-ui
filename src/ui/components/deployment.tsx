@@ -70,7 +70,7 @@ const networkDataContainer = () => {
 
       const node = {
         id: kRes.uid,
-        label: nodeTitle(kRes.name, true, boldTitle),
+        label: nodeTitle(kRes.name, !isWrapper, boldTitle),
         title: `${kRes.kind}: ${kRes.name}${kRes.status ? ` - ${kRes.status}` : ""}`,
         group: kind,
         shape: image ? "image" : "box",

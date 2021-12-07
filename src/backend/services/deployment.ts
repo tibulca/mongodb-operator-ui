@@ -200,16 +200,22 @@ export const getMongodbDeployment = async (context: string): Promise<MongodbDepl
   ]);
 
   return {
-    k8sResources: [
-      ...crdsAndCrs,
-      ...podResources,
-      ...deployments,
-      ...replicaSets,
-      ...statefulSets,
-      ...pvcs,
-      ...pvs,
-      ...services,
-      ...secrets,
+    clusters: [
+      {
+        cluster: context,
+        namespace: operatorNs,
+        k8sResources: [
+          ...crdsAndCrs,
+          ...podResources,
+          ...deployments,
+          ...replicaSets,
+          ...statefulSets,
+          ...pvcs,
+          ...pvs,
+          ...services,
+          ...secrets,
+        ],
+      },
     ],
   };
 };

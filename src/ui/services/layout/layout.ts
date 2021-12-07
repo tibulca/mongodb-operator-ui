@@ -118,8 +118,11 @@ export const generateLayout = (
   deployment: MongodbDeploymentWithActions,
   settings: DisplaySettings
 ): MongodbDeploymentUIModel => {
+  // todo: add support for multi cluster
+  const { cluster, namespace, k8sResources } = deployment.clusters[0];
+
   let nodes: Map<string, GraphNode> = new Map(
-    deployment.k8sResources.map((res) => [
+    k8sResources.map((res) => [
       res.uid,
       {
         resource: res,
@@ -147,7 +150,7 @@ export const generateLayout = (
   insertGroupNodes(nodes, groupedNodes);
 
   if (settings.Layout === NetworkLayout.Fixed) {
-    nodes = setFixedLayout({ cluster: "", namespace: "citi" }, nodes);
+    nodes = setFixedLayout(cluster, namespace, nodes);
   }
 
   return {

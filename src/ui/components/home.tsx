@@ -11,7 +11,7 @@ import Head from "next/head";
 import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import AppHeader from "./app-header";
 import appSettings from "../services/appSettings";
-import { generateLayout } from "../services/layout";
+import { generateLayout } from "../services/layout/layout";
 import AppConfigDrawer from "./app-config-drawer";
 import { Toolbar } from "@mui/material";
 

@@ -1,5 +1,4 @@
 import { K8SKind, MongoDBKind } from "../../../core/enums";
-import { K8SNamespace } from "../../../core/models";
 import { balanceSortedArray, groupBy, isOperatorPod } from "../../../core/utils";
 import { GraphNode, GraphNodes } from "./models";
 
@@ -81,15 +80,15 @@ const getPadding = (graph: Graph) => {
   };
 };
 
-const addNamespaceNode = (namespace: K8SNamespace, graph: Graph) => {
-  const nodeId = `ns-${namespace.cluster}-${namespace.namespace}`;
+const addNamespaceNode = (cluster: string, namespace: string, graph: Graph) => {
+  const nodeId = `ns-${cluster}-${namespace}`;
   const nodes = Array.from(graph.nodes.values());
   const height = Math.max(...nodes.map((n) => n.ui.location.y)) + 150;
   const width = Math.max(...nodes.map((n) => n.ui.location.x)) + 75;
   graph.nodes.set(nodeId, {
     resource: {
       uid: nodeId,
-      name: `${namespace.cluster}: ${namespace.namespace}`,
+      name: `${cluster}: ${namespace}`,
       kind: K8SKind.Namespace,
       creationTimestamp: Date.now(),
       fullStatus: undefined,
@@ -109,7 +108,7 @@ const addNamespaceNode = (namespace: K8SNamespace, graph: Graph) => {
   });
 };
 
-export const setFixedLayout = (namespace: K8SNamespace, nodes: GraphNodes): GraphNodes => {
+export const setFixedLayout = (cluster: string, namespace: string, nodes: GraphNodes): GraphNodes => {
   let graph: Graph = {
     nodes,
     levelNodes: new Map(),
@@ -127,7 +126,7 @@ export const setFixedLayout = (namespace: K8SNamespace, nodes: GraphNodes): Grap
     levelNodesWithoutParent.forEach((n) => updateCoordinates(graph, n, xCoordByLevel, padding, 0));
   });
 
-  addNamespaceNode(namespace, graph);
+  addNamespaceNode(cluster, namespace, graph);
 
   return graph.nodes;
 };

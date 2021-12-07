@@ -6,6 +6,7 @@ import { v4 } from "uuid";
 import "react-graph-vis/node_modules/vis-network/styles/vis-network.css";
 import { Node, Edge } from "../ui-models";
 import { NetworkLayout } from "../ui-enums";
+import { K8SKind, MongoDBKind } from "../../core/enums";
 
 const options = (layout: NetworkLayout): VisOptions => ({
   layout:
@@ -32,15 +33,33 @@ const options = (layout: NetworkLayout): VisOptions => ({
     enabled: false,
   },
   nodes: {
-    shape: "box",
     font: {
       multi: true,
     },
   },
   groups: {
-    Operator: {
+    [MongoDBKind.MongoDBOperator]: {
       size: 50,
       font: { size: 18 },
+    },
+    [MongoDBKind.MongoDB]: {
+      size: 50,
+      font: { size: 18 },
+    },
+    [MongoDBKind.MongoDBCommunity]: {
+      size: 50,
+      font: { size: 18 },
+    },
+    [MongoDBKind.MongoDBUser]: {
+      size: 50,
+      font: { size: 18 },
+    },
+    [MongoDBKind.MongoDBOpsManager]: {
+      size: 50,
+      font: { size: 18 },
+    },
+    [K8SKind.Namespace]: {
+      color: "#afb",
     },
     // Pod: {
     //   shapeProperties: { borderDashes: [5, 5] },

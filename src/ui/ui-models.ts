@@ -22,6 +22,14 @@ export type ResourceUIModel = ResourceWithActions & {
       x: number;
       y: number;
     };
+    font?: {
+      size: number;
+      bold: boolean;
+    };
+    size?: {
+      height: number;
+      width: number;
+    };
   };
   isGroup: boolean;
 };

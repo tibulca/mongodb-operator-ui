@@ -1,4 +1,5 @@
 import { K8SKind, MongoDBKind } from "../../../core/enums";
+import { K8SNamespace } from "../../../core/models";
 import { balanceSortedArray, groupBy, isOperatorPod } from "../../../core/utils";
 import { GraphNode, GraphNodes } from "./models";
 
@@ -13,6 +14,7 @@ const LevelAdjustment = new Map<K8SKind | MongoDBKind, number>([
   [K8SKind.Secret, 5],
   [K8SKind.ConfigMap, 5],
   [K8SKind.PersistentVolumeClaim, 5],
+  [K8SKind.PersistentVolume, 6],
 ]);
 
 const updateNodeLevelRec = (n: GraphNode) => {
@@ -59,12 +61,12 @@ const updateCoordinates = (
   padding: { x: number; y: number },
   parentOffsetX: number
 ) => {
-  n.y = n.level * padding.y;
+  n.ui.location.y = n.level * padding.y;
   const nodeWeight = n.weight >= OperatorSortWeight ? n.weight - OperatorSortWeight + 1 : n.weight;
 
   const xStart = Math.max(xCoordByLevel[n.level] ?? 0, parentOffsetX);
   const xEnd = xStart + nodeWeight * padding.x;
-  n.x = xStart + (xEnd - xStart) / 2;
+  n.ui.location.x = xStart + (xEnd - xStart) / 2;
   xCoordByLevel[n.level] = xEnd;
 
   n.children.forEach((cn) => updateCoordinates(g, cn, xCoordByLevel, padding, xStart));
@@ -79,7 +81,35 @@ const getPadding = (graph: Graph) => {
   };
 };
 
-export const setFixedLayout = (nodes: GraphNodes): GraphNodes => {
+const addNamespaceNode = (namespace: K8SNamespace, graph: Graph) => {
+  const nodeId = `ns-${namespace.cluster}-${namespace.namespace}`;
+  const nodes = Array.from(graph.nodes.values());
+  const height = Math.max(...nodes.map((n) => n.ui.location.y)) + 150;
+  const width = Math.max(...nodes.map((n) => n.ui.location.x)) + 75;
+  graph.nodes.set(nodeId, {
+    resource: {
+      uid: nodeId,
+      name: `${namespace.cluster}: ${namespace.namespace}`,
+      kind: K8SKind.Namespace,
+      creationTimestamp: Date.now(),
+      fullStatus: undefined,
+    },
+    ui: {
+      location: { x: width / 2 + 20, y: height / 2 - 75 },
+      size: { height, width },
+      font: { size: 32, bold: true },
+    },
+    weight: 0,
+    level: 0,
+    parent: undefined,
+    children: [],
+    dependsOnNodes: [],
+    dependentNodes: [],
+    isGroup: false,
+  });
+};
+
+export const setFixedLayout = (namespace: K8SNamespace, nodes: GraphNodes): GraphNodes => {
   let graph: Graph = {
     nodes,
     levelNodes: new Map(),
@@ -96,6 +126,8 @@ export const setFixedLayout = (nodes: GraphNodes): GraphNodes => {
     const levelNodesWithoutParent = levelNodes.filter((n) => !n.parent);
     levelNodesWithoutParent.forEach((n) => updateCoordinates(graph, n, xCoordByLevel, padding, 0));
   });
+
+  addNamespaceNode(namespace, graph);
 
   return graph.nodes;
 };

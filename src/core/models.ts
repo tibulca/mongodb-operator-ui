@@ -42,6 +42,11 @@ export type ResourceWithActions = K8SResource & {
   actions?: NodeHttpAction[];
 };
 
+export type K8SNamespace = {
+  cluster: string;
+  namespace: string;
+};
+
 export type MongodbDeploymentWithActions = {
   k8sResources: ResourceWithActions[];
 };

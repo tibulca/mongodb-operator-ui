@@ -4,7 +4,6 @@ import { DisplaySettings, MongodbDeploymentUIModel, ResourceUIModel } from "../.
 import { setFixedLayout } from "./fixed";
 import { GraphNode, GraphNodes } from "./models";
 import clonedeep from "lodash.clonedeep";
-import { K8SKind, MongoDBKind } from "../../../core/enums";
 
 const addNodesRelation = (nodes: GraphNodes) =>
   nodes.forEach((n) => {
@@ -59,9 +58,11 @@ const graphNodeToResourceUIModel = (n: GraphNode): ResourceUIModel => ({
   ...n.resource,
   ui: {
     location: {
-      x: Math.round(n.x),
-      y: n.y,
+      x: Math.round(n.ui.location.x),
+      y: n.ui.location.y,
     },
+    size: n.ui.size,
+    font: n.ui.font,
   },
   isGroup: n.isGroup,
 });
@@ -76,8 +77,9 @@ const insertGroupNodes = (nodes: GraphNodes, groupedNodes: Map<string, GraphNode
         creationTimestamp: Date.now(),
         fullStatus: undefined,
       },
-      x: 0,
-      y: 0,
+      ui: {
+        location: { x: 0, y: 0 },
+      },
       weight: 0,
       level: 0,
       parent: undefined,
@@ -121,8 +123,9 @@ export const generateLayout = (
       res.uid,
       {
         resource: res,
-        x: 0,
-        y: 0,
+        ui: {
+          location: { x: 0, y: 0 },
+        },
         weight: 0,
         level: 0,
         parent: undefined,
@@ -144,7 +147,7 @@ export const generateLayout = (
   insertGroupNodes(nodes, groupedNodes);
 
   if (settings.Layout === NetworkLayout.Fixed) {
-    nodes = setFixedLayout(nodes);
+    nodes = setFixedLayout({ cluster: "", namespace: "citi" }, nodes);
   }
 
   return {

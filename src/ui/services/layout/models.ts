@@ -3,8 +3,21 @@ import { ResourceWithActions } from "../../../core/models";
 export type GraphNode = {
   resource: ResourceWithActions;
 
-  x: number;
-  y: number;
+  ui: {
+    location: {
+      x: number;
+      y: number;
+    };
+    size?: {
+      height: number;
+      width: number;
+    };
+    font?: {
+      size: number;
+      bold: boolean;
+    };
+  };
+
   weight: number;
   level: number;
 

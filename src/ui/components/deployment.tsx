@@ -4,7 +4,7 @@ import YAML from "yaml";
 import NodeInfoDrawer from "./node-info-drawer";
 import Network from "./network";
 import * as NetworkModels from "../ui-models";
-import { K8SKind } from "../../core/enums";
+import { K8SKind, MongoDBKind, MongoDBKindSet } from "../../core/enums";
 import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import { isOperatorPod } from "../../core/utils";
 
@@ -14,7 +14,6 @@ type DeploymentProps = {
 };
 
 const ResourceImageMap: Record<string, string> = {
-  ["operator"]: "/images/pod-256-lightgreen.png",
   [K8SKind.Pod.toLowerCase()]: "/images/pod-256.png",
   [K8SKind.CustomResourceDefinition.toLowerCase()]: "/images/crd-256.png",
   [K8SKind.Deployment.toLowerCase()]: "/images/deploy-256.png",
@@ -25,87 +24,85 @@ const ResourceImageMap: Record<string, string> = {
   [K8SKind.Service.toLowerCase()]: "/images/svc-256.png",
   [K8SKind.ConfigMap.toLowerCase()]: "/images/cm-256.png",
   [K8SKind.Secret.toLowerCase()]: "/images/secret-256.png",
-  mongodb: "/images/crd-u-256-lightgreen.png",
-  mongodbcommunity: "/images/crd-u-256-lightgreen.png",
-  mongodbopsmanager: "/images/crd-u-256-lightgreen.png",
-  mongodbuser: "/images/user-256-lightgreen.png",
+
+  [MongoDBKind.MongoDB.toLowerCase()]: "/images/crd-u-256.png",
+  [MongoDBKind.MongoDBCommunity.toLowerCase()]: "/images/crd-u-256.png",
+  [MongoDBKind.MongoDBOpsManager.toLowerCase()]: "/images/crd-u-256.png",
+  [MongoDBKind.MongoDBUser.toLowerCase()]: "/images/user-256.png",
+  [MongoDBKind.MongoDBOperator.toLowerCase()]: "/images/pod-256.png",
 };
 
 const networkDataContainer = () => {
   const nodes: NetworkModels.Node[] = [];
+  const wrapperNodes: NetworkModels.Node[] = [];
   const edges: NetworkModels.Edge[] = [];
 
-  const nodeTitle = (title: string) =>
-    title
-      .split("-")
-      .reduce(
-        (acc, w) => {
-          if (acc[acc.length - 1].length + w.length < 18) {
-            acc[acc.length - 1] += w + "-";
-          } else {
-            acc.push(w + "-");
-          }
-          return acc;
-        },
-        [""]
-      )
-      .join("\n")
-      .slice(0, -1);
+  const nodeTitle = (title: string, wordWrap: boolean, bold?: boolean) => {
+    const withWordWrap = (t: string, sep: string) =>
+      t
+        .split("-")
+        .reduce(
+          (acc, w) => {
+            if (acc[acc.length - 1].length + w.length < 18) {
+              acc[acc.length - 1] += w + "-";
+            } else {
+              acc.push(w + "-");
+            }
+            return acc;
+          },
+          [""]
+        )
+        .join(sep)
+        .slice(0, -1);
+
+    return `${bold ? "<b>" : ""}${wordWrap ? withWordWrap(title, bold ? "</b>\n<b>" : "\n") : title}${
+      bold ? "</b>" : ""
+    }`;
+  };
 
   return {
-    addNode: (
-      uid: string,
-      label: string,
-      tooltip: string,
-      kind: string,
-      edgeFromNodes: { uid: string; dashes?: boolean }[],
-      edgeToNodes: { uid: string; dashes?: boolean }[],
-      x: number,
-      y: number
-    ) => {
+    addNode: (kRes: NetworkModels.ResourceUIModel) => {
+      const kind = isOperatorPod(kRes) ? MongoDBKind.MongoDBOperator : kRes.kind;
       const image = ResourceImageMap[kind.toLowerCase()];
-      const node = {
-        id: uid,
-        label: nodeTitle(label),
-        title: tooltip,
-        group: kind,
-        shape: image ? "image" : undefined,
-        image,
-        x,
-        y,
-      };
-      nodes.push(node);
 
-      edgeFromNodes &&
-        edges.push(...edgeFromNodes.map((e) => ({ from: e.uid, to: uid, dashes: e.dashes ? [3, 5] : undefined })));
-      edgeToNodes &&
-        edges.push(...edgeToNodes.map((e) => ({ from: uid, to: e.uid, dashes: e.dashes ? [3, 5] : undefined })));
+      const isWrapper = kind === K8SKind.Namespace;
+      const boldTitle = kRes.ui.font?.bold || MongoDBKindSet.has(kind as MongoDBKind);
+
+      const node = {
+        id: kRes.uid,
+        label: nodeTitle(kRes.name, true, boldTitle),
+        title: `${kRes.kind}: ${kRes.name}${kRes.status ? ` - ${kRes.status}` : ""}`,
+        group: kind,
+        shape: image ? "image" : "box",
+        image,
+        font: kRes.ui.font?.size ? { size: kRes.ui.font.size } : undefined,
+        opacity: isWrapper ? 0.2 : undefined,
+        x: kRes.ui.location.x,
+        y: kRes.ui.location.y,
+        heightConstraint: kRes.ui.size ? { minimum: kRes.ui.size.height, valign: "top" } : undefined,
+        widthConstraint: kRes.ui.size ? { minimum: kRes.ui.size.width } : undefined,
+      };
+      isWrapper ? wrapperNodes.push(node) : nodes.push(node);
+
+      const edgeFromNodes: { uid: string; dashes?: boolean }[] = [
+        { uid: kRes.ownerReference?.uid ?? "" },
+        ...(kRes.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
+      ].filter((e) => e.uid);
+      edges.push(...edgeFromNodes.map((e) => ({ from: e.uid, to: kRes.uid, dashes: e.dashes ? [3, 5] : undefined })));
+
+      // const edgeToNodes: { uid: string; dashes?: boolean }[] = [];
+      // edgeToNodes &&
+      //   edges.push(...edgeToNodes.map((e) => ({ from: kRes.uid, to: e.uid, dashes: e.dashes ? [3, 5] : undefined })));
 
       return node;
     },
-    data: () => ({ nodes, edges }),
+    data: () => ({ nodes: [...wrapperNodes, ...nodes], edges }),
   };
 };
 
 const buildGraph = (deployment: MongodbDeploymentUIModel) => {
   const graph = networkDataContainer();
-
-  deployment.resources.forEach((kRes) => {
-    graph.addNode(
-      kRes.uid,
-      kRes.name,
-      `${kRes.kind}: ${kRes.name}${kRes.status ? ` - ${kRes.status}` : ""}`,
-      isOperatorPod(kRes) ? "Operator" : kRes.kind,
-      [
-        { uid: kRes.ownerReference?.uid ?? "" },
-        ...(kRes.dependsOnUIDs?.map((uid) => ({ uid, dashes: true })) ?? []),
-      ].filter((e) => e.uid),
-      [],
-      kRes.ui.location.x,
-      kRes.ui.location.y
-    );
-  });
-
+  deployment.resources.forEach(graph.addNode);
   return graph.data();
 };
 

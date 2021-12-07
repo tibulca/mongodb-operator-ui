@@ -1,7 +1,7 @@
 import * as stream from "stream";
 import * as k8s from "@kubernetes/client-node";
 import { K8SKind } from "../../../core/enums";
-import { Context } from "../../../core/models";
+import { K8SContext } from "../../../core/models";
 
 const kc = new k8s.KubeConfig();
 kc.loadFromDefault();
@@ -33,7 +33,7 @@ const clients = (context: string) => {
   return ctxClients;
 };
 
-const getContexts = (): { contexts: Context[]; currentContext: string } => ({
+const getContexts = (): { contexts: K8SContext[]; currentContext: string } => ({
   contexts: kc.getContexts(),
   currentContext: kc.getCurrentContext(),
 });

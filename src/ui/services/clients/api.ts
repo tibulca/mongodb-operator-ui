@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { HttpContentType, HttpHeader, HttpMethod, HttpStatusCode } from "../../../core/enums";
-import { Context, MongodbDeploymentWithActions, NodeHttpAction } from "../../../core/models";
+import { K8SContext, MongodbDeploymentWithActions, NodeHttpAction } from "../../../core/models";
 import { Time } from "../../../core/utils";
 
 type errCallback = (err: Error) => void;
@@ -62,8 +62,8 @@ const executeHttpAction = async (action: NodeHttpAction) => {
   };
 };
 
-const getContexts = (successCb: successCallback<{ contexts: Context[]; currentContext: string }>, errCb: errCallback) =>
-  get("/api/context", (result: { contexts: Context[]; currentContext: string }) => successCb(result), errCb);
+const getContexts = (successCb: successCallback<{ contexts: K8SContext[]; currentContext: string }>, errCb: errCallback) =>
+  get("/api/context", (result: { contexts: K8SContext[]; currentContext: string }) => successCb(result), errCb);
 
 export default {
   get,

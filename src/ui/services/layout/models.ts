@@ -1,7 +1,7 @@
-import { K8SResourceWithActions } from "../../../core/models";
+import { ResourceWithActions } from "../../../core/models";
 
 export type GraphNode = {
-  resource: K8SResourceWithActions;
+  resource: ResourceWithActions;
 
   x: number;
   y: number;
@@ -12,6 +12,8 @@ export type GraphNode = {
   children: GraphNode[];
   dependsOnNodes: GraphNode[];
   dependentNodes: GraphNode[];
+
+  isGroup: boolean;
 };
 
 export type GraphNodes = Map<string, GraphNode>;

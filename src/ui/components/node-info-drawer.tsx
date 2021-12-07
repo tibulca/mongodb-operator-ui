@@ -68,23 +68,28 @@ type NodeInfoDrawerProps = {
 };
 
 const downloadTextFile = (filename: string, text: string) => {
-  const file = new Blob([text], { type: HttpContentType.TextFile });
-  const element = document.createElement("a");
-  element.href = URL.createObjectURL(file);
-  element.download = filename;
-  document.body.appendChild(element);
-  element.click();
+  // const file = new Blob([text], { type: HttpContentType.TextFile });
+  // const element = document.createElement("a");
+  // element.href = URL.createObjectURL(file);
+  // element.download = filename;
+  // document.body.appendChild(element);
+  // element.click();
 
   // const wnd = window.open("about:blank") as Window;
-  // wnd.document.write(text);
+  // wnd.document.write(`<pre>${text}</pre>`);
   // wnd.document.close();
+
+  const content = `${filename}:\n\n\n${text}`;
+  const winUrl = URL.createObjectURL(new Blob([content], { type: "text/plain" }));
+  window.open(winUrl, "win");
 };
 
 const executeAction = async (action: NodeHttpAction) => {
   try {
     const response = await apiClient.executeHttpAction(action);
     if (response.contentType === HttpContentType.TextFile) {
-      downloadTextFile(`${action.group}-${action.label}-${Date.now()}.txt`, String(response.body));
+      // downloadTextFile(`${action.group}-${action.label}-${Date.now()}.txt`, String(response.body));
+      downloadTextFile(`${action.group} / ${action.label} / ${new Date()}`, String(response.body));
     }
     return response.success;
   } catch (e) {

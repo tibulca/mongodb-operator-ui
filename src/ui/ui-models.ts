@@ -1,5 +1,4 @@
-import { K8SKind, MongoDBKind } from "../core/enums";
-import { Context, K8SResourceWithActions } from "../core/models";
+import { K8SContext, ResourceWithActions } from "../core/models";
 import { NetworkLayout, ResourceVisibility } from "./ui-enums";
 
 export type Node = { id: string; label: string; group: string; shape?: string; image?: string };
@@ -13,19 +12,21 @@ export type DisplaySettings = {
   ResourcesMap: Map<string, ResourceVisibility>;
   Context: {
     currentContext: string;
-    contexts: Context[];
+    contexts: K8SContext[];
   };
 };
 
-export type K8SResourceUIModel = K8SResourceWithActions & {
+export type ResourceUIModel = ResourceWithActions & {
   ui: {
     location: {
       x: number;
       y: number;
     };
   };
+  isGroup: boolean;
 };
 
 export type MongodbDeploymentUIModel = {
-  k8sResources: K8SResourceUIModel[];
+  resources: ResourceUIModel[];
+  resourceGroups: Map<string, ResourceUIModel[]>;
 };

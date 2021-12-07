@@ -87,10 +87,10 @@ const networkDataContainer = () => {
   };
 };
 
-const buildGraph = (settings: DisplaySettings, deployment: MongodbDeploymentUIModel) => {
+const buildGraph = (deployment: MongodbDeploymentUIModel) => {
   const graph = networkDataContainer();
 
-  deployment.k8sResources.forEach((kRes) => {
+  deployment.resources.forEach((kRes) => {
     graph.addNode(
       kRes.uid,
       kRes.name,
@@ -110,7 +110,7 @@ const buildGraph = (settings: DisplaySettings, deployment: MongodbDeploymentUIMo
 };
 
 const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
-  const selectedNode = data.k8sResources.find((o) => o.uid === uid);
+  const selectedNode = data.resources.find((o) => o.uid === uid);
   if (!uid || !selectedNode) {
     return { title: "", sections: [] };
   }
@@ -162,6 +162,18 @@ const getNodeDetails = (data: MongodbDeploymentUIModel, uid?: string) => {
     });
   }
 
+  if (selectedNode.isGroup) {
+    const groupResources = data.resourceGroups.get(selectedNode.uid) || [];
+    sections.push({
+      title: "Members",
+      content: YAML.stringify(
+        groupResources.map((r) => r.name),
+        null,
+        2
+      ),
+    });
+  }
+
   return {
     title: `${selectedNode.name}`,
     sections,
@@ -191,11 +203,7 @@ const Deployment = (props: DeploymentProps) => {
       />
 
       <div style={{ border: "1px solid darkgray", height: "100%" }}>
-        <Network
-          data={buildGraph(props.settings, props.data)}
-          layout={props.settings.Layout}
-          onSelectNode={setSelectedNodeUID}
-        />
+        <Network data={buildGraph(props.data)} layout={props.settings.Layout} onSelectNode={setSelectedNodeUID} />
       </div>
     </div>
   );

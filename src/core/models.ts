@@ -38,15 +38,15 @@ export type NodeHttpAction = {
   httpMethod: HttpMethod;
 };
 
-export type K8SResourceWithActions = K8SResource & {
+export type ResourceWithActions = K8SResource & {
   actions?: NodeHttpAction[];
 };
 
 export type MongodbDeploymentWithActions = {
-  k8sResources: K8SResourceWithActions[];
+  k8sResources: ResourceWithActions[];
 };
 
-export type Context = {
+export type K8SContext = {
   cluster: string;
   user: string;
   name: string;

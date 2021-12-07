@@ -1,7 +1,7 @@
 ## Install
 
 ```
-helm install \
+helm upgrade \
   --repo https://github.com/tibulca/mdb-op-ui/tree/main \
   mongodb-operator-ui \
   helm_chart \

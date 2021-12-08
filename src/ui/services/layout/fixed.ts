@@ -88,7 +88,8 @@ const addNamespaceNode = (cluster: string, namespace: string, graph: Graph) => {
   graph.nodes.set(nodeId, {
     resource: {
       uid: nodeId,
-      name: `${cluster}: ${namespace}`,
+      name: cluster !== "inClusterContext" ? `${cluster}: ${namespace}` : namespace,
+      namespace,
       kind: K8SKind.Namespace,
       creationTimestamp: Date.now(),
       fullStatus: undefined,

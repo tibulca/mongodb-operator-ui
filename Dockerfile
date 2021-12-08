@@ -16,6 +16,28 @@ RUN yarn build
 # Production image, copy all the files and run next
 FROM node:14-alpine AS runner
 RUN apk add --no-cache curl openssl
+
+# kubectl
+# RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+# RUN mv kubectl /usr/bin/kubectl && chmod +x /usr/bin/kubectl
+
+#helm
+ENV HELM_VER="3.7.1"
+RUN curl -LO "https://get.helm.sh/helm-v${HELM_VER}-linux-amd64.tar.gz"
+RUN tar -xvf "helm-v${HELM_VER}-linux-amd64.tar.gz" 
+RUN mv linux-amd64/helm /usr/bin/helm && \
+  chmod +x /usr/bin/helm && \
+  rm -rf linux-amd64 && \
+  rm "helm-v${HELM_VER}-linux-amd64.tar.gz"
+
+# mongo cli
+# RUN curl https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-debian10-4.4.10.tgz -S --output mdb.tgz
+# RUN tar -xvf mdb.tgz 
+# RUN mv mongodb-linux-x86_64-debian10-4.4.10/bin/mongo /usr/bin/mongo && \
+#   chmod +x /usr/bin/mongo && \
+#   rm -rf mongodb-linux-x86_64-debian10-4.4.10 && \
+#   rm "mdb.tgz"
+
 WORKDIR /app
 
 ENV NODE_ENV production

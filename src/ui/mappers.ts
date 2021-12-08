@@ -12,6 +12,8 @@ export const toResourceUIStatus = (status?: ResourceStatus): ResourceUIStatus =>
       return ResourceUIStatus.Pending;
     case ResourceStatus.Running:
       return ResourceUIStatus.Running;
+    case ResourceStatus.Terminating:
+      return ResourceUIStatus.Failed;
     default:
       status && console.error(`status "${status}" not mapped!`);
       return ResourceUIStatus.NA;

@@ -9,7 +9,10 @@ import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import GetAppIcon from "@mui/icons-material/GetApp";
 import SettingsIcon from "@mui/icons-material/Settings";
+import DisplaySettingsIcon from "@mui/icons-material/AppSettingsAlt";
+//import DisplaySettingsIcon from "@mui/icons-material/SettingsOverscan";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import StyledDrawer from "./styled-drawer";
 import theme from "../theme";
@@ -30,6 +33,9 @@ type AppConfigDrawerProps = {
   onShowSettings: () => void;
   onToggleColorMode: () => void;
   onClose: () => void;
+  operatorInstalled: boolean;
+  onOperatorInstall: () => void;
+  onOperatorConfigure: () => void;
 };
 
 const AppConfigDrawer = (props: AppConfigDrawerProps) => {
@@ -54,10 +60,25 @@ const AppConfigDrawer = (props: AppConfigDrawerProps) => {
         </ListItem>
         <ListItem button onClick={props.onShowSettings}>
           <ListItemIcon>
-            <SettingsIcon />
+            <DisplaySettingsIcon />
           </ListItemIcon>
-          <ListItemText primary={"Settings"} />
+          <ListItemText primary={"App settings"} />
         </ListItem>
+        {props.operatorInstalled ? (
+          <ListItem button onClick={props.onOperatorConfigure}>
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Operator settings"} />
+          </ListItem>
+        ) : (
+          <ListItem button onClick={props.onOperatorInstall}>
+            <ListItemIcon>
+              <GetAppIcon />
+            </ListItemIcon>
+            <ListItemText primary={"Install operator"} />
+          </ListItem>
+        )}
         {/* {["Inbox", "Starred", "Send email", "Drafts"].map((text, index) => (
               <ListItem button key={text}>
                 <ListItemIcon>{index % 2 === 0 ? <InboxIcon /> : <MailIcon />}</ListItemIcon>

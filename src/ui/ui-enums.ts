@@ -14,7 +14,7 @@ export enum ResourceUIStatus {
   NA = "n/a",
   Running = "running",
   Pending = "pending",
-  Completed = "completed",
-  Failed = "failed",
+  Completed = "complete",
+  Failed = "fail",
 }
 export const ResourceUIStatusSet = new Set(<string[]>Object.values(ResourceUIStatus));

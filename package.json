@@ -13,6 +13,7 @@
     "@emotion/styled": "^11.3.0",
     "@kubernetes/client-node": "^0.15.1",
     "@mui/icons-material": "^5.0.5",
+    "@mui/lab": "^5.0.0-alpha.59",
     "@mui/material": "^5.0.6",
     "axios": "^0.23.0",
     "lodash.clonedeep": "^4.5.0",

@@ -33,10 +33,10 @@ const style = {
 
 // todo: move to i18n
 const aResourceVisibilityLabels = {
-  [ResourceVisibility.Show]: "always",
-  [ResourceVisibility.ShowGrouped]: "grouped",
+  [ResourceVisibility.Show]: "display all",
+  [ResourceVisibility.ShowGrouped]: "display as a group",
   [ResourceVisibility.ShowOnlyIfReferenced]: "if referenced",
-  [ResourceVisibility.Hide]: "hide",
+  [ResourceVisibility.Hide]: "hide all",
 };
 
 type SettingsModalProps = {

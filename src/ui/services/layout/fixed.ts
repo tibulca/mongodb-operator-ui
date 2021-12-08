@@ -83,7 +83,7 @@ const getPadding = (graph: Graph) => {
 const addNamespaceNode = (cluster: string, namespace: string, graph: Graph) => {
   const nodeId = `ns-${cluster}-${namespace}`;
   const nodes = Array.from(graph.nodes.values());
-  const height = Math.max(...nodes.map((n) => n.ui.location.y)) + 150;
+  const height = Math.max(...nodes.map((n) => n.ui.location.y)) + 200;
   const width = Math.max(...nodes.map((n) => n.ui.location.x)) + 75;
   graph.nodes.set(nodeId, {
     resource: {
@@ -95,7 +95,7 @@ const addNamespaceNode = (cluster: string, namespace: string, graph: Graph) => {
       fullStatus: undefined,
     },
     ui: {
-      location: { x: width / 2 + 20, y: height / 2 - 75 },
+      location: { x: width / 2 + 20, y: height / 2 - 70 },
       size: { height, width },
       font: { size: 32, bold: true },
     },

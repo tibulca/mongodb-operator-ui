@@ -1,5 +1,12 @@
 import { V1ObjectMeta } from "@kubernetes/client-node";
-import { K8SKind, MongoDBCRDGroupSet, MongoDBKind, MongoDBKindSet, MongoDbOperatorLabelSet } from "../../core/enums";
+import {
+  K8SKind,
+  MongoDBCRDGroupSet,
+  MongoDBKind,
+  MongoDBKindSet,
+  MongoDbOperatorLabelSet,
+  ResourceStatus,
+} from "../../core/enums";
 import { MongodbDeployment, K8SResource } from "../../core/models";
 import k8sClient from "./clients/k8s";
 
@@ -26,7 +33,7 @@ const mapK8SResourceWith = (kRes: KResourceBase) => ({
   kind: kRes.kind as MongoDBKind | K8SKind,
   spec: kRes.spec,
   creationTimestamp: new Date(kRes.metadata?.creationTimestamp ?? 0).getTime(),
-  status: kRes.status?.phase,
+  status: kRes.metadata?.deletionTimestamp ? ResourceStatus.Terminating : kRes.status?.phase,
   fullStatus: kRes.status,
   labels: kRes.metadata?.labels,
 });

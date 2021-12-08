@@ -17,6 +17,7 @@ export enum HttpHeader {
 export enum HttpStatusCode {
   OK = 200,
   BadRequest = 400,
+  NotImplemented = 501,
 }
 
 export enum K8SKind {
@@ -64,5 +65,6 @@ export enum ResourceStatus {
   Reconciling = "Reconciling",
   Completed = "Completed",
   Failed = "Failed",
+  Terminating = "Terminating",
 }
 export const ResourceStatusSet = new Set(<string[]>Object.values(ResourceStatus));

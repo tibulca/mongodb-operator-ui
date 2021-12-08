@@ -17,10 +17,7 @@ const deleteAsync = async (url: string): Promise<string> => {
   return result.text();
 };
 
-const postAsync = async <T>(url: string, data: string): Promise<T> => {
-  const result = await fetch(url, { method: HttpMethod.Post, body: data });
-  return result.json();
-};
+const postAsync = async <T, U>(url: string, data: T): Promise<U> => axios.post<T, U>(url, data);
 
 const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) => {
   const fetchData = async () => {
@@ -47,11 +44,11 @@ const getPodLogs = (context: string, namespace: string, pod: string, container: 
 const deletePod = (context: string, namespace: string, pod: string) =>
   deleteAsync(`/api/pods?context=${context}&namespace=${namespace}&pod=${pod}`);
 
-const executeHttpAction = async (action: NodeHttpAction) => {
+const executeHttpAction = async (action: NodeHttpAction, timeout = 5) => {
   const httpResponse = await axios({
     method: action.httpMethod,
     url: action.url,
-    timeout: Time.Seconds(5),
+    timeout: Time.Seconds(timeout),
   });
 
   return {
@@ -62,8 +59,10 @@ const executeHttpAction = async (action: NodeHttpAction) => {
   };
 };
 
-const getContexts = (successCb: successCallback<{ contexts: K8SContext[]; currentContext: string }>, errCb: errCallback) =>
-  get("/api/context", (result: { contexts: K8SContext[]; currentContext: string }) => successCb(result), errCb);
+const getContexts = (
+  successCb: successCallback<{ contexts: K8SContext[]; currentContext: string }>,
+  errCb: errCallback
+) => get("/api/context", (result: { contexts: K8SContext[]; currentContext: string }) => successCb(result), errCb);
 
 export default {
   get,
@@ -73,4 +72,5 @@ export default {
   deletePod,
   executeHttpAction,
   getContexts,
+  postAsync,
 };

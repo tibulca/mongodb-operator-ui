@@ -7,6 +7,8 @@ import * as NetworkModels from "../ui-models";
 import { K8SKind, MongoDBKind, MongoDBKindSet } from "../../core/enums";
 import { DisplaySettings, MongodbDeploymentUIModel } from "../ui-models";
 import { isOperatorPod } from "../../core/utils";
+import { toResourceUIStatus } from "../mappers";
+import { ResourceUIStatus } from "../ui-enums";
 
 type DeploymentProps = {
   data: MongodbDeploymentUIModel;
@@ -14,22 +16,34 @@ type DeploymentProps = {
 };
 
 const ResourceImageMap: Record<string, string> = {
-  [K8SKind.Pod.toLowerCase()]: "/images/pod-256.png",
-  [K8SKind.CustomResourceDefinition.toLowerCase()]: "/images/crd-256.png",
-  [K8SKind.Deployment.toLowerCase()]: "/images/deploy-256.png",
-  [K8SKind.StatefulSet.toLowerCase()]: "/images/sts-256.png",
-  [K8SKind.ReplicaSet.toLowerCase()]: "/images/rs-256.png",
-  [K8SKind.PersistentVolume.toLowerCase()]: "/images/pv-256.png",
-  [K8SKind.PersistentVolumeClaim.toLowerCase()]: "/images/pvc-256.png",
-  [K8SKind.Service.toLowerCase()]: "/images/svc-256.png",
-  [K8SKind.ConfigMap.toLowerCase()]: "/images/cm-256.png",
-  [K8SKind.Secret.toLowerCase()]: "/images/secret-256.png",
+  [K8SKind.Pod.toLowerCase()]: "/images/pod.svg",
+  [K8SKind.CustomResourceDefinition.toLowerCase()]: "/images/crd.svg",
+  [K8SKind.Deployment.toLowerCase()]: "/images/deploy.svg",
+  [K8SKind.StatefulSet.toLowerCase()]: "/images/sts.svg",
+  [K8SKind.ReplicaSet.toLowerCase()]: "/images/rs.svg",
+  [K8SKind.PersistentVolume.toLowerCase()]: "/images/pv.svg",
+  [K8SKind.PersistentVolumeClaim.toLowerCase()]: "/images/pvc.svg",
+  [K8SKind.Service.toLowerCase()]: "/images/svc.svg",
+  [K8SKind.ConfigMap.toLowerCase()]: "/images/cm.svg",
+  [K8SKind.Secret.toLowerCase()]: "/images/secret.svg",
 
-  [MongoDBKind.MongoDB.toLowerCase()]: "/images/crd-u-256.png",
-  [MongoDBKind.MongoDBCommunity.toLowerCase()]: "/images/crd-u-256.png",
-  [MongoDBKind.MongoDBOpsManager.toLowerCase()]: "/images/crd-u-256.png",
-  [MongoDBKind.MongoDBUser.toLowerCase()]: "/images/user-256.png",
-  [MongoDBKind.MongoDBOperator.toLowerCase()]: "/images/pod-256.png",
+  [MongoDBKind.MongoDB.toLowerCase()]: "/images/crd-u.svg",
+  [MongoDBKind.MongoDBCommunity.toLowerCase()]: "/images/crd-u.svg",
+  [MongoDBKind.MongoDBOpsManager.toLowerCase()]: "/images/crd-u.svg",
+  [MongoDBKind.MongoDBUser.toLowerCase()]: "/images/user.svg",
+  [MongoDBKind.MongoDBOperator.toLowerCase()]: "/images/pod.svg",
+};
+
+const getResourceImage = (kRes: NetworkModels.ResourceUIModel, kind: K8SKind | MongoDBKind) => {
+  const image = ResourceImageMap[kind.toLowerCase()];
+  if (!image) {
+    return undefined;
+  }
+
+  const uiStatus = toResourceUIStatus(kRes.status);
+  return uiStatus !== ResourceUIStatus.NA && uiStatus !== ResourceUIStatus.Running
+    ? image.replace(".svg", `-${uiStatus}.svg`)
+    : image;
 };
 
 const networkDataContainer = () => {
@@ -63,7 +77,7 @@ const networkDataContainer = () => {
   return {
     addNode: (kRes: NetworkModels.ResourceUIModel) => {
       const kind = isOperatorPod(kRes) ? MongoDBKind.MongoDBOperator : kRes.kind;
-      const image = ResourceImageMap[kind.toLowerCase()];
+      const image = getResourceImage(kRes, kind);
 
       const isWrapper = kind === K8SKind.Namespace;
       const boldTitle = kRes.ui.font?.bold || MongoDBKindSet.has(kind as MongoDBKind);

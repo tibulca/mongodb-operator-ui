@@ -57,3 +57,12 @@ export enum MongoDbOperatorLabel {
   Community = "mongodb-kubernetes-operator",
 }
 export const MongoDbOperatorLabelSet = new Set(<string[]>Object.values(MongoDbOperatorLabel));
+
+export enum ResourceStatus {
+  Running = "Running",
+  Pending = "Pending",
+  Reconciling = "Reconciling",
+  Completed = "Completed",
+  Failed = "Failed",
+}
+export const ResourceStatusSet = new Set(<string[]>Object.values(ResourceStatus));

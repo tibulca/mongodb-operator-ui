@@ -1,4 +1,4 @@
-import { HttpMethod, K8SKind, MongoDBKind } from "./enums";
+import { HttpMethod, K8SKind, MongoDBKind, ResourceStatus } from "./enums";
 
 export type CRD = {
   name: string;
@@ -19,7 +19,7 @@ export type K8SResource = {
     uid: string;
   };
   dependsOnUIDs?: string[];
-  status?: string;
+  status?: ResourceStatus;
   fullStatus: any;
   spec?: any;
   childs?: string[]; // e.g. containers

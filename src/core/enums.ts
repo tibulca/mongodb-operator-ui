@@ -68,3 +68,9 @@ export enum ResourceStatus {
   Terminating = "Terminating",
 }
 export const ResourceStatusSet = new Set(<string[]>Object.values(ResourceStatus));
+
+export enum MongoDBOperator {
+  Community = "Community",
+  Enterprise = "Enterprise",
+}
+export const MongoDBOperatorSet = new Set(<string[]>Object.values(MongoDBOperator));

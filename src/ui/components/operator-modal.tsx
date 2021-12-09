@@ -12,11 +12,17 @@ import {
   MenuItem,
   TextField,
   Checkbox,
+  Radio,
+  FormLabel,
+  RadioGroup,
+  Link,
 } from "@mui/material";
 import MuiAlert from "@mui/material/Alert";
 import LoadingButton from "@mui/lab/LoadingButton";
+import LaunchIcon from "@mui/icons-material/Launch";
 import { useState } from "react";
 import api from "../services/clients/api";
+import { MongoDBOperator, MongoDBOperatorSet } from "../../core/enums";
 
 const style = {
   position: "absolute" as "absolute",
@@ -78,6 +84,34 @@ const OperatorModal = (props: OperatorModalProps) => {
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
           <Stack spacing={2}>
             <h2>{props.operatorIsInstalled ? "Configure MongoDB Operator" : "Install MongoDB operator"}</h2>
+            <div>
+              (uses{" "}
+              <Link href="https://github.com/mongodb/helm-charts" target="_blank">
+                MongoDB Helm Charts
+                <LaunchIcon fontSize="small" />
+              </Link>
+              )
+            </div>
+            <FormControl component="fieldset" sx={{ "& .MuiFormGroup-root": { paddingLeft: "30px" } }}>
+              <FormLabel component="legend">Operator</FormLabel>
+              <RadioGroup
+                row
+                aria-label="show"
+                name={`radio-buttons-group-operator`}
+                value={MongoDBOperator.Community}
+                onChange={(e) => {}}
+              >
+                {Array.from(MongoDBOperatorSet.values()).map((v) => (
+                  <FormControlLabel
+                    key={v}
+                    value={v}
+                    control={<Radio size="small" />}
+                    label={v}
+                    sx={{ "& .MuiFormControlLabel-label": { fontSize: "smaller" } }}
+                  />
+                ))}
+              </RadioGroup>
+            </FormControl>
             <FormControl>
               <TextField
                 required
@@ -87,7 +121,6 @@ const OperatorModal = (props: OperatorModalProps) => {
                 onChange={(event) => setNamespace(event.target.value)}
               />
             </FormControl>
-
             <FormControl>
               <FormControlLabel
                 control={<Checkbox checked={createResource} onChange={(event) => setCreateRes(event.target.checked)} />}
@@ -97,7 +130,16 @@ const OperatorModal = (props: OperatorModalProps) => {
             <FormControl>
               <FormControlLabel
                 control={<Checkbox checked={withTLS} onChange={(event) => setWithTLS(event.target.checked)} />}
-                label="With TLS"
+                label={
+                  <>
+                    With TLS (installs{" "}
+                    <Link href="https://cert-manager.io/" target="_blank">
+                      cert-manager
+                      <LaunchIcon fontSize="small" />
+                    </Link>
+                    )
+                  </>
+                }
               />
             </FormControl>
             <FormControl>
@@ -107,7 +149,6 @@ const OperatorModal = (props: OperatorModalProps) => {
                 onChange={(event) => setResMembers(event.target.value)}
               />
             </FormControl>
-
             {props.operatorIsInstalled ? (
               "<< TO BE IMPLEMENTED >>"
             ) : (

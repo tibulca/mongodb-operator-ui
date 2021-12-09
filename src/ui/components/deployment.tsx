@@ -27,9 +27,9 @@ const ResourceImageMap: Record<string, string> = {
   [K8SKind.ConfigMap.toLowerCase()]: "/images/cm.svg",
   [K8SKind.Secret.toLowerCase()]: "/images/secret.svg",
 
-  [MongoDBKind.MongoDB.toLowerCase()]: "/images/crd-u.svg",
-  [MongoDBKind.MongoDBCommunity.toLowerCase()]: "/images/crd-u.svg",
-  [MongoDBKind.MongoDBOpsManager.toLowerCase()]: "/images/crd-u.svg",
+  [MongoDBKind.MongoDB.toLowerCase()]: "/images/cr.svg",
+  [MongoDBKind.MongoDBCommunity.toLowerCase()]: "/images/cr.svg",
+  [MongoDBKind.MongoDBOpsManager.toLowerCase()]: "/images/cr.svg",
   [MongoDBKind.MongoDBUser.toLowerCase()]: "/images/user.svg",
   [MongoDBKind.MongoDBOperator.toLowerCase()]: "/images/pod.svg",
 };

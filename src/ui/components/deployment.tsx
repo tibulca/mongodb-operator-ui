@@ -208,6 +208,7 @@ const Deployment = (props: DeploymentProps) => {
         }}
         sections={nodeDetails.sections}
         actions={nodeDetails.node?.actions ?? []}
+        docs={nodeDetails.node?.docs}
         onClose={() => setSelectedNodeUID(undefined)}
         open={!!selectedNodeUID}
         width={900}

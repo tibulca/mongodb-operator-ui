@@ -74,3 +74,14 @@ export enum MongoDBOperator {
   Enterprise = "Enterprise",
 }
 export const MongoDBOperatorSet = new Set(<string[]>Object.values(MongoDBOperator));
+
+export enum ResourceLabel {
+  Operator = "Operator",
+  MongoDBReplicaSet = "MongoDB ReplicaSet",
+  OpsManager = "OpsManager",
+  BackupDaemon = "Backup Daemon",
+  MongoDBResource = "MongoDBResource",
+  MongoDBMultiCluster = "MongoDBMulti",
+  MongoDBCommunityResource = "MongoDBCommunityResource",
+  MongoDBUser = "MongoDBUser",
+}

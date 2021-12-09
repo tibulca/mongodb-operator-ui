@@ -50,7 +50,7 @@ const OperatorModal = (props: OperatorModalProps) => {
   const [namespace, setNamespace] = useState("mongodb");
   const [resourceMembers, setResMembers] = useState("3");
   const [createResource, setCreateRes] = useState(true);
-  const [withTLS, setWithTLS] = useState(true);
+  const [withTLS, setWithTLS] = useState(false);
 
   const installOperator = async () => {
     setActionInProgress(true);
@@ -107,6 +107,7 @@ const OperatorModal = (props: OperatorModalProps) => {
                     value={v}
                     control={<Radio size="small" />}
                     label={v}
+                    disabled={v !== MongoDBOperator.Community}
                     sx={{ "& .MuiFormControlLabel-label": { fontSize: "smaller" } }}
                   />
                 ))}
@@ -124,7 +125,7 @@ const OperatorModal = (props: OperatorModalProps) => {
             <FormControl>
               <FormControlLabel
                 control={<Checkbox checked={createResource} onChange={(event) => setCreateRes(event.target.checked)} />}
-                label="Create resource"
+                label="Create MongoDB resource"
               />
             </FormControl>
             <FormControl>

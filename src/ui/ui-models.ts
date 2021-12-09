@@ -1,4 +1,4 @@
-import { K8SContext, ResourceWithActions } from "../core/models";
+import { K8SContext, ResourceWithActions, ResourceWithActionsAndDocs } from "../core/models";
 import { NetworkLayout, ResourceVisibility } from "./ui-enums";
 
 export type Node = { id: string; label: string; group: string; shape?: string; image?: string };
@@ -16,7 +16,7 @@ export type DisplaySettings = {
   };
 };
 
-export type ResourceUIModel = ResourceWithActions & {
+export type ResourceUIModel = ResourceWithActionsAndDocs & {
   ui: {
     location: {
       x: number;

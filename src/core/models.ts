@@ -54,6 +54,22 @@ export type MongodbDeploymentWithActions = {
   }[];
 };
 
+export type ResourceWithActionsAndDocs = ResourceWithActions & {
+  docs: {
+    description?: string;
+    url?: string;
+    labels: string[];
+  };
+};
+
+export type MongodbDeploymentWithActionsAndDocs = {
+  clusters: {
+    cluster: string;
+    namespace: string;
+    k8sResources: ResourceWithActionsAndDocs[];
+  }[];
+};
+
 export type K8SContext = {
   cluster: string;
   user: string;

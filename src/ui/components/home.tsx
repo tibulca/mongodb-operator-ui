@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo, createContext } from "react";
 import Deployment from "./deployment";
 import SettingsModal from "./settings-modal";
 import apiClient from "../services/clients/api";
-import { MongodbDeploymentWithActions } from "../../core/models";
+import { MongodbDeploymentWithActions, MongodbDeploymentWithActionsAndDocs } from "../../core/models";
 import Box from "@mui/material/Box";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -36,7 +36,7 @@ const Home: NextPage = () => {
   );
   const theme = useMemo(() => createTheme({ palette: { mode: themeMode } }), [themeMode]);
 
-  const [rawDeployment, setRawDeployment] = useState<MongodbDeploymentWithActions | undefined>();
+  const [rawDeployment, setRawDeployment] = useState<MongodbDeploymentWithActionsAndDocs | undefined>();
   const [deployment, setDeployment] = useState<MongodbDeploymentUIModel | undefined>();
 
   const [showOperatorModal, setShowOperatorModal] = useState(false);
@@ -51,7 +51,7 @@ const Home: NextPage = () => {
     appSettings.save(settings);
   };
 
-  const handleSetDeployment = (deployment: MongodbDeploymentWithActions) => {
+  const handleSetDeployment = (deployment: MongodbDeploymentWithActionsAndDocs) => {
     setRefreshInProgress(false);
     setRawDeployment(deployment);
     setDeployment(generateLayout(deployment, settings));
@@ -116,7 +116,9 @@ const Home: NextPage = () => {
 
           <Box role="main" component="main" sx={{ flexGrow: 1, p: 3, backgroundColor: "white", color: "black" }}>
             <Toolbar />
-            {!operatorIsInstalled() && <h4>MongoDB Operator is not installed in this Kubernetes cluster!</h4>}
+            {!operatorIsInstalled() && (
+              <h4 style={{ marginLeft: "18px" }}>MongoDB Operator is not installed in this Kubernetes cluster!</h4>
+            )}
             {deployment && <Deployment data={deployment} settings={settings} />}
           </Box>
 

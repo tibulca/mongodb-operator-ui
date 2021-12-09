@@ -65,13 +65,14 @@ const AppConfigDrawer = (props: AppConfigDrawerProps) => {
           <ListItemText primary={"App settings"} />
         </ListItem>
         {props.operatorInstalled ? (
-          <ListItem button onClick={props.onOperatorConfigure}>
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary={"Operator settings"} />
-          </ListItem>
+          <></>
         ) : (
+          // <ListItem button onClick={props.onOperatorConfigure}>
+          //   <ListItemIcon>
+          //     <SettingsIcon />
+          //   </ListItemIcon>
+          //   <ListItemText primary={"Operator settings"} />
+          // </ListItem>
           <ListItem button onClick={props.onOperatorInstall}>
             <ListItemIcon>
               <GetAppIcon />

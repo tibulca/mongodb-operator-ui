@@ -11,6 +11,7 @@ import {
   TextField,
   CircularProgress,
   Toolbar,
+  Link,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MuiAlert from "@mui/material/Alert";
@@ -22,6 +23,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import { styled } from "@mui/material/styles";
 import Drawer from "@mui/material/Drawer";
+import LaunchIcon from "@mui/icons-material/Launch";
 
 type Anchor = "top" | "left" | "bottom" | "right";
 
@@ -62,6 +64,11 @@ type NodeInfoDrawerProps = {
   title: string;
   sections: InfoSection[];
   actions: NodeHttpAction[];
+  docs?: {
+    description?: string;
+    url?: string;
+    labels: string[];
+  };
   onClose: () => void;
   open: boolean;
   width: number;
@@ -213,6 +220,14 @@ const NodeInfoDrawer = (props: NodeInfoDrawerProps) => {
       >
         <Typography id="modal-modal-description" sx={{ mt: 2, paddingLeft: "20px" }}>
           <h2>{props.title}</h2>
+          {props.docs?.description}{" "}
+          {props.docs?.url ? (
+            <Link href={props.docs?.url} target="_blank">
+              <LaunchIcon fontSize="small" />
+            </Link>
+          ) : (
+            ""
+          )}
           <Stack direction="row" spacing={2}>
             {renderActions(
               props.actions,

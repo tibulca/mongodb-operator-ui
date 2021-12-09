@@ -1,4 +1,4 @@
-import { MongodbDeploymentWithActions } from "../../../core/models";
+import { MongodbDeploymentWithActions, MongodbDeploymentWithActionsAndDocs } from "../../../core/models";
 import { NetworkLayout, ResourceVisibility } from "../../ui-enums";
 import { DisplaySettings, MongodbDeploymentUIModel, ResourceUIModel } from "../../ui-models";
 import { setFixedLayout } from "./fixed";
@@ -76,6 +76,7 @@ const insertGroupNodes = (nodes: GraphNodes, groupedNodes: Map<string, GraphNode
         kind: group[0].resource.kind,
         creationTimestamp: Date.now(),
         fullStatus: undefined,
+        docs: { labels: [] },
       },
       ui: {
         location: { x: 0, y: 0 },
@@ -115,7 +116,7 @@ const insertGroupNodes = (nodes: GraphNodes, groupedNodes: Map<string, GraphNode
 };
 
 export const generateLayout = (
-  deployment: MongodbDeploymentWithActions,
+  deployment: MongodbDeploymentWithActionsAndDocs,
   settings: DisplaySettings
 ): MongodbDeploymentUIModel => {
   // todo: add support for multi cluster

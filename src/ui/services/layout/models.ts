@@ -1,7 +1,7 @@
-import { ResourceWithActions } from "../../../core/models";
+import { ResourceWithActionsAndDocs } from "../../../core/models";
 
 export type GraphNode = {
-  resource: ResourceWithActions;
+  resource: ResourceWithActionsAndDocs;
 
   ui: {
     location: {

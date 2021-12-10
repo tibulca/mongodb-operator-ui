@@ -75,7 +75,7 @@ const getPadding = (graph: Graph) => {
   const paddingY = 150;
   const maxNodesPerLevel = Math.max(...Array.from(graph.levelNodes.values()).map((ln) => ln.length));
   return {
-    x: Math.max(paddingY * (graph.levelNodes.size / maxNodesPerLevel) * 2, 140),
+    x: Math.max(paddingY * (graph.levelNodes.size / maxNodesPerLevel) * 1.1, 140),
     y: paddingY,
   };
 };
@@ -93,6 +93,7 @@ const addNamespaceNode = (cluster: string, namespace: string, graph: Graph) => {
       kind: K8SKind.Namespace,
       creationTimestamp: Date.now(),
       fullStatus: undefined,
+      docs: { labels: [] },
     },
     ui: {
       location: { x: width / 2 + 20, y: height / 2 - 70 },

@@ -22,7 +22,10 @@ const deleteAsync = async (url: string): Promise<string> => {
   return result.text();
 };
 
-const postAsync = async <T, U>(url: string, data: T): Promise<U> => axios.post<T, U>(url, data);
+const postAsync = async <T>(url: string, data: unknown): Promise<T> => {
+  const result = await axios.post<T>(url, data);
+  return result.data;
+};
 
 const get = <T>(url: string, successCb: successCallback<T>, errCb: errCallback) => {
   const fetchData = async () => {

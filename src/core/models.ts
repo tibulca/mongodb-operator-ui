@@ -1,5 +1,14 @@
 import { HttpMethod, K8SKind, MongoDBKind, ResourceStatus } from "./enums";
 
+export type DocumentedResult = {
+  commands: {
+    command: string;
+    description?: string;
+    output?: string;
+  }[];
+  docRefs: string[];
+};
+
 export type CRD = {
   name: string;
   crs: {
@@ -26,7 +35,7 @@ export type K8SResource = {
   labels?: { [key: string]: string };
 };
 
-export type MongodbDeployment = {
+export type MongodbDeployment = DocumentedResult & {
   clusters: {
     cluster: string;
     namespace: string;
@@ -46,7 +55,7 @@ export type ResourceWithActions = K8SResource & {
   actions?: NodeHttpAction[];
 };
 
-export type MongodbDeploymentWithActions = {
+export type MongodbDeploymentWithActions = DocumentedResult & {
   clusters: {
     cluster: string;
     namespace: string;
@@ -62,7 +71,7 @@ export type ResourceWithActionsAndDocs = ResourceWithActions & {
   };
 };
 
-export type MongodbDeploymentWithActionsAndDocs = {
+export type MongodbDeploymentWithActionsAndDocs = DocumentedResult & {
   clusters: {
     cluster: string;
     namespace: string;

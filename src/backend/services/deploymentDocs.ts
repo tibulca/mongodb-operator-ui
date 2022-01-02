@@ -76,6 +76,7 @@ export const getMongodbDeploymentWithActionsAndDocs = async (
 ): Promise<MongodbDeploymentWithActionsAndDocs> => {
   const deployment = await getMongodbDeploymentWithActions(context);
   return {
+    ...deployment,
     clusters: deployment.clusters.map((c) => ({
       cluster: c.cluster,
       namespace: c.namespace,

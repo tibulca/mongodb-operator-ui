@@ -23,6 +23,7 @@ import LaunchIcon from "@mui/icons-material/Launch";
 import { useState } from "react";
 import api from "../services/clients/api";
 import { MongoDBOperator, MongoDBOperatorSet } from "../../core/enums";
+import { DocumentedResult } from "../../core/models";
 
 const style = {
   position: "absolute" as "absolute",
@@ -40,6 +41,7 @@ type OperatorModalProps = {
   show: boolean;
   operatorIsInstalled: boolean;
   context: string;
+  logResult: (r: DocumentedResult) => void;
   onClose: (result: { operatorChanged: boolean }) => void;
 };
 
@@ -55,7 +57,7 @@ const OperatorModal = (props: OperatorModalProps) => {
   const installOperator = async () => {
     setActionInProgress(true);
     try {
-      await api.postAsync("/api/operator", {
+      const result = await api.postAsync<DocumentedResult>("/api/operator", {
         action: "install",
         context: props.context,
         namespace,
@@ -65,6 +67,8 @@ const OperatorModal = (props: OperatorModalProps) => {
       });
       setNotification({ text: "", isError: false });
       setActionInProgress(false);
+      console.log(result);
+      props.logResult(result);
       props.onClose({ operatorChanged: true });
     } catch (error) {
       setNotification({ text: String(error), isError: true });

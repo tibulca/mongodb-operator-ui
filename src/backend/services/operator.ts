@@ -1,4 +1,5 @@
 import helm from "./helm";
+import { DocumentedResult } from "../../core/models";
 
 export const installOperator = async (
   context: string,
@@ -7,22 +8,40 @@ export const installOperator = async (
   withTLS: boolean,
   resourceMembers: number
 ) => {
-  const result: { [action: string]: { command: string; output: string } } = {};
+  const result: DocumentedResult = { commands: [], docRefs: [] };
 
   if (withTLS) {
-    result["installCertManager"] = await helm.installCertManager(context);
+    const installCertManager = await helm.installCertManager(context);
+    result.commands.push({
+      command: installCertManager.command,
+      output: installCertManager.output,
+      description: "install cert-manager",
+    });
+    result.docRefs.push("https://cert-manager.io/docs/installation/");
   }
 
-  result["installMongoDBCommunityOperator"] = await helm.installMongoDBCommunityOperator(context, namespace);
+  const installMongoDBCommunityOperator = await helm.installMongoDBCommunityOperator(context, namespace);
+  result.commands.push({
+    command: installMongoDBCommunityOperator.command,
+    output: installMongoDBCommunityOperator.output,
+    description: "install MongoDB Community Operator",
+  });
+  result.docRefs.push("https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/docs/install-upgrade.md");
 
   if (createResource) {
-    result["createResource"] = await helm.upgradeMongoDBCommunityOperator(
+    const deployResourceResult = await helm.upgradeMongoDBCommunityOperator(
       context,
       namespace,
       createResource,
       withTLS,
       resourceMembers
     );
+    result.commands.push({
+      command: deployResourceResult.command,
+      output: deployResourceResult.output,
+      description: "deploy MongoDB resource",
+    });
+    result.docRefs.push("https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/docs/deploy-configure.md");
   }
 
   return result;

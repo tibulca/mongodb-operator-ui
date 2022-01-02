@@ -97,6 +97,10 @@ const getPods = async (context: string, namespace: string, crUIDs: string[]) => 
   return {
     operatorPod,
     podResources,
+    command: {
+      command: "kubectl --namespace=citi --context=citi.mongokubernetes.com get pods",
+      description: `get the list of pods from "${namespace}" namespace`,
+    },
   };
 };
 
@@ -190,7 +194,7 @@ const getPersistentVolumes = async (context: string): Promise<K8SResource[]> => 
 export const getMongodbDeployment = async (context: string): Promise<MongodbDeployment> => {
   const { crdsAndCrs, operatorNs, crUIDs } = await getCRDsAndCRs(context);
 
-  const { operatorPod, podResources } = await getPods(context, operatorNs, crUIDs);
+  const { operatorPod, podResources, command: podCmd } = await getPods(context, operatorNs, crUIDs);
 
   const [deployments, replicaSets, statefulSets, pvcs, pvs] = await Promise.all([
     getDeployments(context, operatorNs),
@@ -207,6 +211,8 @@ export const getMongodbDeployment = async (context: string): Promise<MongodbDepl
   ]);
 
   return {
+    commands: [podCmd],
+    docRefs: [],
     clusters: [
       {
         cluster: context,

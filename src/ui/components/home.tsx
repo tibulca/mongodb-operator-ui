@@ -3,7 +3,7 @@ import React, { useEffect, useState, useMemo, createContext } from "react";
 import Deployment from "./deployment";
 import SettingsModal from "./settings-modal";
 import apiClient from "../services/clients/api";
-import { MongodbDeploymentWithActions, MongodbDeploymentWithActionsAndDocs } from "../../core/models";
+import { MongodbDeploymentWithActionsAndDocs, DocumentedResult } from "../../core/models";
 import Box from "@mui/material/Box";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -16,6 +16,7 @@ import AppConfigDrawer from "./app-config-drawer";
 import { Toolbar } from "@mui/material";
 import { isOperatorPod } from "../../core/utils";
 import OperatorModal from "./operator-modal";
+import ConsoleDrawer from "./console-drawer";
 
 const ColorModeContext = createContext({ toggleColorMode: () => {} });
 const AppConfigDrawerWidth = 240;
@@ -41,6 +42,8 @@ const Home: NextPage = () => {
 
   const [showOperatorModal, setShowOperatorModal] = useState(false);
 
+  const [consoleText, setConsoleText] = useState("");
+
   const handleChangeSettings = (settings: DisplaySettings) => {
     setSettings(settings);
     if (appSettings.load().Context.currentContext !== settings.Context.currentContext) {
@@ -51,10 +54,19 @@ const Home: NextPage = () => {
     appSettings.save(settings);
   };
 
+  const addErrorToConsole = (err: Error) => setConsoleText(`${consoleText}\n\n${err}`.trim());
+  const addResultToConsole = (r: DocumentedResult) =>
+    setConsoleText(
+      `${consoleText}\n\n${r.commands.map((c) => `${c.command}\n${c.description}`).join("\n")}\n${r.docRefs.join(
+        "\n"
+      )}`.trim()
+    );
+
   const handleSetDeployment = (deployment: MongodbDeploymentWithActionsAndDocs) => {
     setRefreshInProgress(false);
     setRawDeployment(deployment);
     setDeployment(generateLayout(deployment, settings));
+    addResultToConsole(deployment);
   };
 
   useEffect(() => {
@@ -63,6 +75,7 @@ const Home: NextPage = () => {
       apiClient.getMongodbDeployment(settings.Context.currentContext, handleSetDeployment, (err) => {
         console.log(err);
         setRefreshInProgress(false);
+        addErrorToConsole(err);
         /* display err */
       });
     } else {
@@ -122,10 +135,13 @@ const Home: NextPage = () => {
             {deployment && <Deployment data={deployment} settings={settings} />}
           </Box>
 
+          <ConsoleDrawer text={consoleText} />
+
           <OperatorModal
             show={showOperatorModal}
             operatorIsInstalled={operatorIsInstalled()}
             context={settings.Context.currentContext}
+            logResult={addResultToConsole}
             onClose={({ operatorChanged }) => {
               setShowOperatorModal(false);
               if (operatorChanged) {

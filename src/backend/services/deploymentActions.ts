@@ -42,6 +42,7 @@ const getActions = (context: string, o: K8SResource): NodeHttpAction[] => {
 export const getMongodbDeploymentWithActions = async (context: string): Promise<MongodbDeploymentWithActions> => {
   const deployment = await getMongodbDeployment(context);
   return {
+    ...deployment,
     clusters: deployment.clusters.map((c) => ({
       cluster: c.cluster,
       namespace: c.namespace,

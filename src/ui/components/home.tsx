@@ -17,6 +17,7 @@ import { Toolbar } from "@mui/material";
 import { isOperatorPod } from "../../core/utils";
 import OperatorModal from "./operator-modal";
 import ConsoleDrawer from "./console-drawer";
+import moment from "moment";
 
 const ColorModeContext = createContext({ toggleColorMode: () => {} });
 const AppConfigDrawerWidth = 240;
@@ -54,13 +55,17 @@ const Home: NextPage = () => {
     appSettings.save(settings);
   };
 
-  const addErrorToConsole = (err: Error) => setConsoleText(`${consoleText}\n\n${err}`.trim());
-  const addResultToConsole = (r: DocumentedResult) =>
-    setConsoleText(
-      `${consoleText}\n\n${r.commands.map((c) => `${c.command}\n${c.description}`).join("\n")}\n${r.docRefs.join(
-        "\n"
-      )}`.trim()
-    );
+  const addTextToConsole = (text: string) =>
+    setConsoleText(`${consoleText}\n[${moment().format("HH:mm:ss.SSS")}]\n${text}`.trim());
+  const addErrorToConsole = (err: Error) => addTextToConsole(String(err));
+  const addResultToConsole = (r: DocumentedResult) => {
+    const commands = r.commands
+      .map((c) => ` - command: ${c.command}${c.description ? `\n      (${c.description})` : ""}`)
+      .join("\n");
+    const docs = r.docRefs.length ? ` - docs:\n     -${r.docRefs.join("\n     -")}` : "";
+
+    addTextToConsole(`${commands}\n${docs}`);
+  };
 
   const handleSetDeployment = (deployment: MongodbDeploymentWithActionsAndDocs) => {
     setRefreshInProgress(false);

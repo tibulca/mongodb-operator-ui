@@ -1,8 +1,8 @@
 ## Install
 
 ```
-git clone https://github.com/tibulca/mdb-op-ui.git
-cd mdb-op-ui
+git clone https://github.com/tibulca/mongodb-operator-ui.git
+cd mongodb-operator-ui
 helm install mongodb-operator-ui helm_chart --namespace=mongodb
 ```
 
@@ -14,8 +14,8 @@ helm install mongodb-operator-ui helm_chart --namespace=mongodb
 2. [yarn](https://classic.yarnpkg.com/lang/en/docs/install)
 
 ```
-git clone https://github.com/tibulca/mdb-op-ui.git
-cd mdb-op-ui
+git clone https://github.com/tibulca/mongodb-operator-ui.git
+cd mongodb-operator-ui
 yarn install
 yarn dev
 ```
